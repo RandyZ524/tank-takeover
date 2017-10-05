@@ -43,29 +43,22 @@ class PlayerTank {
 		this.healthdisplay = healthdisplay;
 	}
 	
+	public void moveToFront() {
+		base.toFront();
+		barrel.toFront();
+		healthdisplay.toFront();
+		return;
+	}
+	
 	public void moveLR() {
-		
-		if (turnleft) {
-			angle -= 3;
-		}
-		
-		if (turnright) {
-			angle += 3;
-		}
-		
-		if (angle < 0) {
-			angle += 360;
-		} else if (angle >= 360) {
-			angle -= 360;
-		}
-		
+		angle += turnright ? 3 : (turnleft ? -3 : 0);
+		Math.floorMod(angle, 360);
 		return;
 	}
 	
 	public void updateBarrel() {
 		barrel.setEndX(100 + (80 * centerx) + 25 * Math.sin(Math.toRadians(angle)));
 		barrel.setEndY(60 + (80 * centery) - 25 * Math.cos(Math.toRadians(angle)));
-		
 		return;
 	}
 	
@@ -120,10 +113,17 @@ class DroneTank {
 		this.healthdisplay = healthdisplay;
 	}
 	
+	public void moveToFront() {
+		base.toFront();
+		barrel.toFront();
+		ownerflag.toFront();
+		healthdisplay.toFront();
+		return;
+	}
+	
 	public void updateBarrel() {
 		barrel.setEndX(100 + (80 * centerx) + 25 * Math.sin(Math.toRadians(angle)));
 		barrel.setEndY(60 + (80 * centery) - 25 * Math.cos(Math.toRadians(angle)));
-		
 		return;
 	}
 	
@@ -174,41 +174,20 @@ class DroneTank {
 			
 		}
 		
-		if (closestsquaredistance == 99999) {
-			closesttarget = owner == 0 ? 73 : 3;
-		} else {
-			closesttarget = possibletargets.get(random.nextInt(possibletargets.size()));
-		}
-		
+		closesttarget = closestsquaredistance == 99999 ? (owner == 0 ? 73 : 3) : possibletargets.get(random.nextInt(possibletargets.size()));
 		activetarget = closesttarget;
 		targeting = true;
-		System.out.println(activetarget);
-		
 		return;
 	}
 	
 	public void turnToTarget(int tempcenterx, int tempcentery) {
 		int targetangle;
 		double temptargetangle;
-		temptargetangle = Math.atan2(tempcentery - centery, tempcenterx - centerx);
-		temptargetangle += Math.PI / 2.0;
+		temptargetangle = Math.atan2(tempcentery - centery, tempcenterx - centerx) + Math.PI / 2.0;
 		targetangle = (int) Math.round(Math.toDegrees(temptargetangle));
-		
-		if (targetangle < 0) {
-			targetangle += 360;
-		}
-		
-		if (angle > targetangle) {
-			angle -= 5;
-		} else if (angle < targetangle) {
-			angle += 5;
-		}
-		
-		if (angle < 0) {
-			angle += 360;
-		} else if (angle >= 360) {
-			angle -= 360;
-		}
+		targetangle = Math.floorMod(targetangle, 360);
+		angle += angle < targetangle ? 5 : (angle > targetangle ? -5 : 0);
+		angle = Math.floorMod(angle, 360);
 		
 		if (angle <= targetangle + 5 && angle >= targetangle - 5) {
 			angle = targetangle;
@@ -305,7 +284,7 @@ public class TankTakeover extends Application {
 		Group root = new Group();
 		Scene scene = new Scene(root, STAGE_WIDTH, STAGE_HEIGHT);
 		
-		tankplayers[0] = new PlayerTank(0, 0, 3, 0, 30, 30, 5, 100, 5, 3, 1, false, false, false, new Circle(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.BLUE), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Text(DISTANCE_FROM_BORDER_X - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
+		tankplayers[0] = new PlayerTank(0, 0, 3, 0, /*30*/0, /*30*/0, /*5*/1, 100, 5, 3, 1, false, false, false, new Circle(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.BLUE), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Text(DISTANCE_FROM_BORDER_X - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
 		tankplayers[1] = new PlayerTank(0, 10, 3, 0, 30, 30, 5, 100, 5, 3, 1, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.RED), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Text(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
 		
 		tankplayers[0].barrel.setStroke(Color.BLUE);
@@ -417,9 +396,7 @@ public class TankTakeover extends Application {
 						allprojectiles.get(allprojectiles.size() - 1).create(i, DISTANCE_FROM_BORDER_X + (tankplayers[i].centerx * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (tankplayers[i].centery * LENGTH_OF_GRID_SQUARE), tankplayers[i].angle, tankplayers[i].bulletspeed, tankplayers[i].bulletsize, tankplayers[i].damage, tankplayers[i].bulletpenetration);
 						root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
 						
-						tankplayers[i].base.toFront();
-						tankplayers[i].barrel.toFront();
-						tankplayers[i].healthdisplay.toFront();
+						tankplayers[i].moveToFront();
 					}
 					
 				}
@@ -457,10 +434,7 @@ public class TankTakeover extends Application {
 							allprojectiles.get(allprojectiles.size() - 1).create(tankdrones[i / 7][i % 7].owner, DISTANCE_FROM_BORDER_X + (tankdrones[i / 7][i % 7].centerx * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (tankdrones[i / 7][i % 7].centery * LENGTH_OF_GRID_SQUARE), tankdrones[i / 7][i % 7].angle, tankdrones[i / 7][i % 7].bulletspeed, tankdrones[i / 7][i % 7].bulletsize, tankdrones[i / 7][i % 7].damage, tankdrones[i / 7][i % 7].bulletpenetration);
 							root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
 							
-							tankdrones[i / 7][i % 7].base.toFront();
-							tankdrones[i / 7][i % 7].barrel.toFront();
-							tankdrones[i / 7][i % 7].ownerflag.toFront();
-							tankdrones[i / 7][i % 7].healthdisplay.toFront();
+							tankdrones[i / 7][i % 7].moveToFront();
 						}
 						
 					}
