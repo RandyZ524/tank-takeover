@@ -548,7 +548,7 @@ public class TankTakeover extends Application {
 	public static int LENGTH_OF_GRID_SQUARE = 80;
 	public static int LENGTH_OF_BARREL = 25;
 	
-	int i, j, k = 0;
+	int i, j, k, levelselection = 0;
 	boolean inthelevel = true;
 	boolean bullettoborder, bullettotank, bullettobullet = false;
 	PlayerTank tankplayers[] = new PlayerTank[2];
@@ -591,7 +591,7 @@ public class TankTakeover extends Application {
 			}
 			//Adding to a megastring while the file has not ended
 			
-			str = str.substring(str.indexOf("C") + 1, str.indexOf("D") - 1).trim();
+			str = str.substring(str.indexOf("Level 1:") + 9, str.indexOf("Level 2:") - 1).trim();
 			
 			for (i = 0; i < 7; i++) {
 				
@@ -726,12 +726,26 @@ public class TankTakeover extends Application {
 				
 				if (inthelevel) {
 				
+					//Player tank logic
 					for (i = 0; i < 2; i++) {
-						tankplayers[i].moveLR();
-						tankplayers[i].updateBarrel();
-						tankplayers[i].updateHealthDisplay();
-						tankplayers[i].updateSightLine();
+						tankplayers[i].moveLR(); //takes keyboard inputs to turn the players
+						tankplayers[i].updateBarrel(); //updates the graphical appearance of the barrel to follow the angle
+						tankplayers[i].updateHealthDisplay(); //updates the numerical health display
+						tankplayers[i].updateSightLine(); //updates the graphical appearance of the sight line to follow the angle
 						
+						/* Shooting bullets logic
+						 * A method decrements a variable until it reaches 0 and checks for this
+						 * Once this happens:
+							* A bullet is added to the object ArrayList allprojectiles
+							* This bullet is given the properties of the tank that fired it, which are:
+								* angle
+								* size
+								* penetration
+								* damage
+								* origin point
+								* team that it's on
+							* The variable is then reset to the max reload timer
+						 */
 						if (tankplayers[i].fireBullet()) {
 							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, new Circle()));
 							allprojectiles.get(allprojectiles.size() - 1).create(i, DISTANCE_FROM_BORDER_X + (tankplayers[i].centerx * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (tankplayers[i].centery * LENGTH_OF_GRID_SQUARE), tankplayers[i].angle, tankplayers[i].bulletspeed, tankplayers[i].bulletsize, tankplayers[i].damage, tankplayers[i].bulletpenetration);
@@ -741,12 +755,31 @@ public class TankTakeover extends Application {
 						
 					}
 					
+					//Drone tank logic
 					for (i = 0; i < 77; i++) {
 						
 						if (tankdrones[i / 7][i % 7] != null) {
-							tankdrones[i / 7][i % 7].updateHealthDisplay();
-							tankdrones[i / 7][i % 7].displayHealthBar();
+							tankdrones[i / 7][i % 7].updateHealthDisplay(); //updates the graphical health bar display
+							tankdrones[i / 7][i % 7].displayHealthBar(); //displays the health bar if the tank was damaged 60 seconds ago
 							
+							/* Targeting enemy/neutral drone logic
+							 * For the tanks that aren't guards or neutral:
+								* If the tank is not currently locked onto a target and shooting:
+									* If the tank hasn't found a new target, then it will run a method to determine the closest tank it should target
+									* Otherwise, the tank will use the coordinates of its targeted tank (represented by the parameter "activetarget") to change its angle until it's facing its target
+									* The tank will only target the enemy player once all other tanks have been converted, and special parameters associated with the coordinates of the player tanks are passed if the attacking tank is targeting the enemy player
+									* After all this targeting logic, the barrel is graphically updated to follow its angle
+								* If the tank is a guard and not locked onto a target and shooting:
+									* If the guard hasn't found a new bullet to gun down, it will run a method to determine the closest bullet that is within the 200 pixel range and is from the enemy team
+									* The logic for guards differs in that its angle used to attack an enemy bullet is updated every time it attacks
+								* Finally, if the tank can release a bullet, a bullet will be added to allprojectiles that inherits the properties of:
+									* angle
+									* size
+									* penetration
+									* damage
+									* origin point
+									* team that it's on
+							 */
 							if (tankdrones[i / 7][i % 7].clazz != 4) {
 							
 								if (!tankdrones[i / 7][i % 7].shooting && tankdrones[i / 7][i % 7].owner != -1) {
@@ -792,7 +825,6 @@ public class TankTakeover extends Application {
 								DroneTank tempdrone = tankdrones[i / 7][i % 7];
 								allprojectiles.get(allprojectiles.size() - 1).create(tempdrone.owner, tempdrone.getTrueX(DISTANCE_FROM_BORDER_X, LENGTH_OF_GRID_SQUARE), tempdrone.getTrueY(DISTANCE_FROM_BORDER_Y, LENGTH_OF_GRID_SQUARE), tempdrone.angle, tempdrone.bulletspeed, tempdrone.bulletsize, tempdrone.damage, tempdrone.bulletpenetration);
 								root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
-								
 								tankdrones[i / 7][i % 7].moveToFront();
 							}
 							
@@ -800,10 +832,33 @@ public class TankTakeover extends Application {
 						
 					}
 					
+					//Collision detection logic for bullets
 					for (i = allprojectiles.size() - 1; i >= 0; i--) {
-						allprojectiles.get(i).updatePosition();
-						allprojectiles.get(i).body.toBack();
+						allprojectiles.get(i).updatePosition(); //uses bullet speed and angle to determine the next location each frame
+						allprojectiles.get(i).body.toBack(); //ensures that all bullets are behind everything else
 						
+						/* Checking against various attributes to determine if something needs to be done about the bullet
+						 * First, the bullet runs a method to determine if it's off the stage
+						 * If this is true, given the stage width and height:
+							* The bullet is removed from the ArrayList allprojectiles
+							* Any guards that may have been targeting the bullet have their targeting reset to find a new bullet to attack
+						 * Then, the bullet runs a method to determine if it's touching a drone tank
+						 * If this is true:
+							* The drone tank is deducted health, taking into account its current state (which team it's on, if any) and the bullet damage
+							* If the bullet has caused the drone to undergo a team shift, its traits are modified to take into account is new team (whether it's been converted or set back to neutral):
+								* Within this method, all drones that were targeting this tank have their targeting reset
+							* The bullet is removed from the ArrayList allprojectiles
+							* Any guards that may have been targeting the bullet have their targeting reset to find a new bullet to attack
+						 * The, the bullet runs the same method, but using the player tank traits, to determine if it's touched an enemy player
+						 * If this is true:
+							* The player is deducted health according to the damage of the bullet
+							* Any guards that may have been targeting the bullet have their targeting reset to find a new bullet to attack
+						 * Finally, the bullet is checked if it is intersecting another bullet of the other team
+						 * If this is true:
+							* Some logic is run to remove both bullets from the ArrayList allprojectiles
+							* Any guards that may have been targeting the bullet have their targeting reset to find a new bullet to attack
+						 * In every case, the three variables bullettoborder, bullettotank, and bullettobullet are used to break out of each for loop early, so they are reset to false for the next bullet's hitbox detection
+						 */
 						if (allprojectiles.get(i).offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
 							allprojectiles.remove(i);
 							
