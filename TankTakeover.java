@@ -447,6 +447,26 @@ class DroneTank {
 		return;
 	}
 	
+	public void healthBelowZeroActivites(int tempowner, DroneTank[][] temptankdrones, int j1) {
+		
+		if (Math.abs(currenthealth) >= maxhealth && owner == -1) {
+			toTeam(tempowner);
+			
+			for (int i1 = 0; i1 < 77; i1++) {
+				
+				if (temptankdrones[i1 / 7][i1 % 7] != null && temptankdrones[i1 / 7][i1 % 7].activetarget == j1) {
+					temptankdrones[i1 / 7][i1 % 7].resetTargeting();
+				}
+				
+			}
+			
+		} else if (currenthealth <= 0 && owner != -1) {
+			toNeutral(owner);
+		}
+		
+		return;
+	}
+	
 }
 
 class TankProjectile {
@@ -504,7 +524,13 @@ class TankProjectile {
 	}
 	
 	public boolean intersectsNonGuard(Circle tempbase, int tempowner) {
-		return body.getBoundsInParent().intersects(tempbase.getBoundsInParent()) && owner != tempowner && size != 4;
+		
+		if (body.getBoundsInParent().intersects(tempbase.getBoundsInParent()) && owner != tempowner && size != 4) {
+			body.setVisible(false);
+			return true;
+		}
+		
+		return false;
 	}
 	
 }
@@ -798,23 +824,7 @@ public class TankTakeover extends Application {
 							
 								if (allprojectiles.get(i).intersectsNonGuard(tankdrones[j / 7][j % 7].base, tankdrones[j / 7][j % 7].owner)) {
 									tankdrones[j / 7][j % 7].removeHealth(allprojectiles.get(i).damage, allprojectiles.get(i).owner);
-									
-									if (Math.abs(tankdrones[j / 7][j % 7].currenthealth) >= tankdrones[j / 7][j % 7].maxhealth && tankdrones[j / 7][j % 7].owner == -1) {
-										tankdrones[j / 7][j % 7].toTeam(allprojectiles.get(i).owner);
-										
-										for (k = 0; k < 77; k++) {
-											
-											if (tankdrones[k / 7][k % 7] != null && tankdrones[k / 7][k % 7].activetarget == j) {
-												tankdrones[k / 7][k % 7].resetTargeting();
-											}
-											
-										}
-										
-									} else if (tankdrones[j / 7][j % 7].currenthealth <= 0 && tankdrones[j / 7][j % 7].owner != -1) {
-										tankdrones[j / 7][j % 7].toNeutral(tankdrones[j / 7][j % 7].owner);
-									}
-									
-									allprojectiles.get(i).body.setVisible(false);
+									tankdrones[j / 7][j % 7].healthBelowZeroActivites(allprojectiles.get(i).owner, tankdrones, j);
 									allprojectiles.remove(i);
 									
 									for (j = 0; j < 77; j++) {
@@ -836,7 +846,6 @@ public class TankTakeover extends Application {
 							
 							if (allprojectiles.get(i).intersectsNonGuard(tankplayers[j].base, j)) {
 								tankplayers[j].currenthealth -= allprojectiles.get(i).damage;
-								allprojectiles.get(i).body.setVisible(false);
 								allprojectiles.remove(i);
 								
 								for (j = 0; j < 77; j++) {
