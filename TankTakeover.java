@@ -18,13 +18,13 @@ import java.util.*;
 //Importing my stuff
 
 class PlayerTank {
-	int clazz, centerx, centery, angle, maxreload, currentreload, damage, currenthealth, bulletspeed, bulletsize, bulletpenetration;
+	int clazz, centerx, centery, angle, maxreload, currentreload, damage, currenthealth, bulletspeed, bulletsize, bulletpenetration, swiveltime, lastpressed;
 	boolean turnleft, turnright, shooting;
 	Circle base;
-	Line barrel;
+	Line barrel, sightline;
 	Text healthdisplay;
 	
-	PlayerTank(int clazz, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, boolean turnleft, boolean turnright, boolean shooting, Circle base, Line barrel, Text healthdisplay) {
+	PlayerTank(int clazz, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, int swiveltime, int lastpressed, boolean turnleft, boolean turnright, boolean shooting, Circle base, Line barrel, Line sightline, Text healthdisplay) {
 		this.clazz = clazz;
 		this.centerx = centerx;
 		this.centery = centery;
@@ -36,11 +36,13 @@ class PlayerTank {
 		this.bulletspeed = bulletspeed;
 		this.bulletsize = bulletsize;
 		this.bulletpenetration = bulletpenetration;
+		this.swiveltime = swiveltime;
 		this.turnleft = turnleft;
 		this.turnright = turnright;
 		this.shooting = shooting;
 		this.base = base;
 		this.barrel = barrel;
+		this.sightline = sightline;
 		this.healthdisplay = healthdisplay;
 	}
 	
@@ -52,7 +54,19 @@ class PlayerTank {
 	}
 	
 	public void moveLR() {
-		angle += turnright ? 3 : (turnleft ? -3 : 0);
+		
+		if (!(turnright || turnleft) && swiveltime < 12 && swiveltime != 0) {
+			angle += lastpressed == 1 ? 1 : -1;
+		} 
+		
+		if (turnright || turnleft) {
+			swiveltime++;
+		} else if (swiveltime != 0) {
+			swiveltime = 0;
+		}
+		
+		int turnangle = swiveltime < 60 ? swiveltime / 12 : 5;
+		angle += turnright ? turnangle : (turnleft ? -turnangle : 0);
 		Math.floorMod(angle, 360);
 		return;
 	}
@@ -66,6 +80,11 @@ class PlayerTank {
 	public void updateHealthDisplay() {
 		healthdisplay.setText(Integer.toString(currenthealth));
 		return;
+	}
+	
+	public void updateSightLine() {
+		sightline.setEndX(100 + (80 * centerx) + 1200 * Math.sin(Math.toRadians(angle)));
+		sightline.setEndY(60 + (80 * centery) - 1200 * Math.cos(Math.toRadians(angle)));
 	}
 	
 	public boolean fireBullet() {
@@ -85,13 +104,14 @@ class PlayerTank {
 }
 
 class DroneTank {
-	int clazz, owner, centerx, centery, angle, maxreload, currentreload, damage, maxhealth, currenthealth, bulletspeed, bulletsize, bulletpenetration, activetarget;
+	int clazz, owner, centerx, centery, angle, maxreload, currentreload, damage, maxhealth, currenthealth, bulletspeed, bulletsize, bulletpenetration, activetarget, lastdamaged;
 	boolean underattack, shooting, targeting;
 	Circle base, ownerflag;
 	Line barrel;
 	Rectangle healthbase, bluehealthbar, redhealthbar;
+	ImageView icon;
 	
-	DroneTank(int clazz, int owner, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int maxhealth, int health, int bulletspeed, int bulletsize, int bulletpenetration, int activetarget, boolean underattack, boolean shooting, boolean targeting, Circle base, Circle ownerflag, Line barrel, Rectangle healthbase, Rectangle bluehealthbar, Rectangle redhealthbar) {
+	DroneTank(int clazz, int owner, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int maxhealth, int health, int bulletspeed, int bulletsize, int bulletpenetration, int activetarget, int lastdamaged, boolean underattack, boolean shooting, boolean targeting, Circle base, Circle ownerflag, Line barrel, Rectangle healthbase, Rectangle bluehealthbar, Rectangle redhealthbar, ImageView icon) {
 		this.clazz = clazz;
 		this.owner = owner;
 		this.centerx = centerx;
@@ -106,6 +126,7 @@ class DroneTank {
 		this.bulletsize = bulletsize;
 		this.bulletpenetration = bulletpenetration;
 		this.activetarget = activetarget;
+		this.lastdamaged = lastdamaged;
 		this.underattack = underattack;
 		this.shooting = shooting;
 		this.targeting = targeting;
@@ -115,6 +136,7 @@ class DroneTank {
 		this.healthbase = healthbase;
 		this.bluehealthbar = bluehealthbar;
 		this.redhealthbar = redhealthbar;
+		this.icon = icon;
 	}
 	
 	public void setDroneClass(int droneclass) {
@@ -122,7 +144,8 @@ class DroneTank {
 		return;
 	}
 	
-	public void setClassAttributes() {
+	public void setClassAttributes(Image[] tempicons) {
+		icon.setImage(tempicons[clazz]);
 		
 		switch (clazz) {
 			case 0:
@@ -133,9 +156,11 @@ class DroneTank {
 				bulletsize = 3;
 				bulletpenetration = 1;
 				base.setRadius(20);
-				ownerflag.setRadius(0.65 * base.getRadius());
 				barrel.setStrokeWidth(6);
 				barrel.setEndY(60 + (80 * centery) - 25);
+				icon.setLayoutX(100 + (80 * centerx) - 10);
+				icon.setLayoutY(60 + (80 * centery) - 10);
+				icon.setVisible(true);
 				break;
 			case 1:
 				maxreload = currentreload = 180;
@@ -145,9 +170,11 @@ class DroneTank {
 				bulletsize = 2;
 				bulletpenetration = 2;
 				base.setRadius(15);
-				ownerflag.setRadius(0.65 * base.getRadius());
 				barrel.setStrokeWidth(4);
 				barrel.setEndY(60 + (80 * centery) - 30);
+				icon.setLayoutX(100 + (80 * centerx) - 8);
+				icon.setLayoutY(60 + (80 * centery) - 8);
+				icon.setVisible(true);
 				break;
 			case 2:
 				maxreload = currentreload = 5;
@@ -157,9 +184,11 @@ class DroneTank {
 				bulletsize = 3;
 				bulletpenetration = 1;
 				base.setRadius(30);
-				ownerflag.setRadius(0.65 * base.getRadius());
 				barrel.setStrokeWidth(9);
 				barrel.setEndY(60 + (80 * centery) - 31);
+				icon.setLayoutX(100 + (80 * centerx) - 20);
+				icon.setLayoutY(60 + (80 * centery) - 20);
+				icon.setVisible(true);
 				break;
 			case 3:
 				maxreload = currentreload = 300;
@@ -169,11 +198,29 @@ class DroneTank {
 				bulletsize = 20; 
 				bulletpenetration = 30;
 				base.setRadius(35);
-				ownerflag.setRadius(0.65 * base.getRadius());
 				barrel.setStrokeWidth(45);
 				barrel.setEndY(60 + (80 * centery) - 30);
+				icon.setLayoutX(100 + (80 * centerx) - 25);
+				icon.setLayoutY(60 + (80 * centery) - 26);
+				icon.setVisible(true);
+				break;
+			case 4:
+				maxreload = currentreload = 3;
+				damage = 0;
+				maxhealth = 200;
+				bulletspeed = 15;
+				bulletsize = 4;
+				bulletpenetration = 10;
+				base.setRadius(25);
+				barrel.setStrokeWidth(12);
+				barrel.setEndY(60 + (80 * centery) - 22);
+				icon.setLayoutX(100 + (80 * centerx) - 11);
+				icon.setLayoutY(60 + (80 * centery) - 13);
+				icon.setVisible(true);
+				break;
 		}
 		
+		ownerflag.setRadius(0.8 * base.getRadius());
 		return;
 	}
 	
@@ -181,6 +228,7 @@ class DroneTank {
 		base.toFront();
 		barrel.toFront();
 		ownerflag.toFront();
+		icon.toFront();
 		healthbase.toFront();
 		bluehealthbar.toFront();
 		redhealthbar.toFront();
@@ -195,6 +243,7 @@ class DroneTank {
 			case 1: barrellength = 30; break;
 			case 2: barrellength = 31; break;
 			case 3: barrellength = 30; break;
+			case 4: barrellength = 22; break;
 		}
 		
 		return barrellength;
@@ -228,6 +277,7 @@ class DroneTank {
 		ownerflag.toFront();
 		currenthealth = maxhealth;
 		targeting = shooting = false;
+		icon.toFront();
 		healthbase.toFront();
 		bluehealthbar.toFront();
 		redhealthbar.toFront();
@@ -240,6 +290,7 @@ class DroneTank {
 		ownerflag.toFront();
 		currenthealth *= oldowner == 0 ? 1 : -1;
 		targeting = shooting = false;
+		icon.toFront();
 		healthbase.toFront();
 		bluehealthbar.toFront();
 		redhealthbar.toFront();
@@ -291,6 +342,55 @@ class DroneTank {
 		
 	}
 	
+	public void findNewTargetGuard(ArrayList<TankProjectile> tempallprojectiles) {
+		int closesttarget = 0;
+		double closestsquaredistance = 99999;
+		double tempdistance = 0;
+		int i1;
+		ArrayList<Integer> possibletargets = new ArrayList<Integer>();
+		Random random = new Random();
+		
+		for (i1 = 0; i1 < tempallprojectiles.size(); i1++) {
+			
+			if (owner != tempallprojectiles.get(i1).owner && tempallprojectiles.get(i1).size != 4) {
+				tempdistance = Math.sqrt(Math.pow((double) tempallprojectiles.get(i1).centerx - (100 + (80 * centerx)), 2) + Math.pow((double) tempallprojectiles.get(i1).centery - (60 + (80 * centery)), 2));
+				
+				if (tempdistance < closestsquaredistance && tempdistance < 200) {
+					closestsquaredistance = tempdistance;
+					closesttarget = i1;
+					possibletargets.clear();
+					possibletargets.add(i1);
+				} else if (tempdistance == closestsquaredistance && owner != tempallprojectiles.get(i1).owner) {
+					possibletargets.add(i1);
+				}
+				
+			}
+			
+		}
+		
+		if (possibletargets.size() != 0) {
+			closesttarget = possibletargets.get(random.nextInt(possibletargets.size()));
+			activetarget = closesttarget;
+			targeting = true;
+		}
+		
+		return;
+	}
+	
+	public void turnToTargetGuard(double tempcenterx, double tempcentery, int tempspeed, int tempangle) {
+		int targetangle;
+		double temptargetangle;
+		double timetobullet = Math.sqrt(Math.pow(tempcentery - (60 + (centery * 80)), 2) + Math.pow(tempcenterx - (100 + (centerx * 80)), 2)) / bulletspeed;
+		tempcenterx += tempspeed * timetobullet * Math.sin(Math.toRadians((double) tempangle)) * 0.9;
+		tempcentery -= tempspeed * timetobullet * Math.cos(Math.toRadians((double) tempangle)) * 0.9;
+		temptargetangle = Math.atan2(tempcentery - (60 + (centery * 80)), tempcenterx - (100 + (centerx * 80))) + Math.PI / 2.0;
+		targetangle = (int) Math.round(Math.toDegrees(temptargetangle));
+		targetangle = Math.floorMod(targetangle, 360);
+		angle = targetangle;
+		shooting = true;
+		return;
+	}
+	
 	public boolean fireBullet() {
 		
 		if (currentreload != 0) {
@@ -303,6 +403,22 @@ class DroneTank {
 		}
 		
 		return false;
+	}
+	
+	public void displayHealthBar() {
+		lastdamaged++;
+		
+		if (lastdamaged > 60) {
+			healthbase.setVisible(false);
+			bluehealthbar.setVisible(false);
+			redhealthbar.setVisible(false);
+		} else {
+			healthbase.setVisible(true);
+			bluehealthbar.setVisible(true);
+			redhealthbar.setVisible(true);
+		}
+		
+		return;
 	}
 	
 }
@@ -373,6 +489,7 @@ public class TankTakeover extends Application {
 	DroneTank tankdrones[][] = new DroneTank[11][7];
 	ArrayList<TankProjectile> allprojectiles = new ArrayList<TankProjectile>();
 	String levelschematics[][] = new String[11][7];
+	Image[] icons = new Image[5];
  
 	public void start(Stage primaryStage) throws Exception {
 		primaryStage.setTitle("Tank Takeover");
@@ -380,11 +497,17 @@ public class TankTakeover extends Application {
 		Group root = new Group();
 		Scene scene = new Scene(root, STAGE_WIDTH, STAGE_HEIGHT);
 		
-		tankplayers[0] = new PlayerTank(0, 0, 3, 0, 30, 30, 5, 100, 5, 3, 1, false, false, false, new Circle(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.BLUE), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Text(DISTANCE_FROM_BORDER_X - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
-		tankplayers[1] = new PlayerTank(0, 10, 3, 0, 30, 30, 5, 100, 5, 3, 1, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.RED), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Text(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
+		for (i = 0; i <= 4; i++) {
+			icons[i] = new Image("Class_" + i + "_Icon.png");
+		}
+		
+		tankplayers[0] = new PlayerTank(0, 0, 3, 0, 30, 30, 500, 100, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.BLUE), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - 1200), new Text(DISTANCE_FROM_BORDER_X - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
+		tankplayers[1] = new PlayerTank(0, 10, 3, 0, 30, 30, 500, 100, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.RED), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - 1200), new Text(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
 		
 		tankplayers[0].barrel.setStroke(Color.BLUE);
+		tankplayers[0].sightline.setStroke(Color.BLUE);
 		tankplayers[1].barrel.setStroke(Color.RED);
+		tankplayers[1].sightline.setStroke(Color.RED);
 		
 		int success;
 		byte inbuf[] = new byte[20500];
@@ -402,7 +525,7 @@ public class TankTakeover extends Application {
 			}
 			//Adding to a megastring while the file has not ended
 			
-			str = str.substring(str.indexOf("A") + 1, str.indexOf("B") - 1).trim();
+			str = str.substring(str.indexOf("C") + 1, str.indexOf("D") - 1).trim();
 			
 			for (i = 0; i < 7; i++) {
 				
@@ -421,7 +544,7 @@ public class TankTakeover extends Application {
 		for (i = 0; i < 2; i++) {
 			tankplayers[i].barrel.setStrokeWidth(6);
 			tankplayers[i].healthdisplay.setText(Integer.toString(tankplayers[i].currenthealth));
-			root.getChildren().addAll(tankplayers[i].base, tankplayers[i].barrel, tankplayers[i].healthdisplay);
+			root.getChildren().addAll(tankplayers[i].base, tankplayers[i].barrel, tankplayers[i].healthdisplay, tankplayers[i].sightline);
 		}
 		
 		for (i = 0; i < 11; i++) {
@@ -429,7 +552,7 @@ public class TankTakeover extends Application {
 			for (j = 0; j < 7; j++) {
 				
 				if (!(i == 0 && j == 3) && !(i == 10 && j == 3)) {
-					tankdrones[i][j] = new DroneTank(0, -1, i, j, 0, 90, 90, 5, 50, 0, 5, 3, 1, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE), 20, Color.GRAY), new Circle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE), 13, Color.GRAY), new Line(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Rectangle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - 3, 20, 6), new Rectangle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE) - 9, DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - 2, 9, 4), new Rectangle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - 2, 9, 4));
+					tankdrones[i][j] = new DroneTank(0, -1, i, j, 0, 90, 90, 5, 50, 0, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE), 20, Color.GRAY), new Circle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE), 13, Color.GRAY), new Line(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Rectangle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - 3, 20, 6), new Rectangle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE) - 9, DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - 2, 9, 4), new Rectangle(DISTANCE_FROM_BORDER_X + (i * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (j * LENGTH_OF_GRID_SQUARE) - 2, 9, 4), new ImageView());
 					
 					tankdrones[i][j].barrel.setStroke(Color.GRAY);
 					tankdrones[i][j].healthbase.setFill(Color.BLACK);
@@ -440,8 +563,16 @@ public class TankTakeover extends Application {
 						tankdrones[i][j] = null;
 					} else {
 						tankdrones[i][j].setDroneClass(Integer.valueOf(levelschematics[i][j]));
-						tankdrones[i][j].setClassAttributes();
-						root.getChildren().addAll(tankdrones[i][j].base, tankdrones[i][j].ownerflag, tankdrones[i][j].barrel, tankdrones[i][j].healthbase, tankdrones[i][j].bluehealthbar, tankdrones[i][j].redhealthbar);
+						tankdrones[i][j].setClassAttributes(icons);
+						
+						if (tankdrones[i][j].clazz == 4) {
+							Circle boundary = new Circle(100 + 80 * tankdrones[i][j].centerx, 60 + 80 * tankdrones[i][j].centery, 200);
+							boundary.setStroke(Color.BLACK);
+							boundary.setFill(Color.TRANSPARENT);
+							root.getChildren().add(boundary);
+						}
+						
+						root.getChildren().addAll(tankdrones[i][j].base, tankdrones[i][j].ownerflag, tankdrones[i][j].barrel, tankdrones[i][j].healthbase, tankdrones[i][j].bluehealthbar, tankdrones[i][j].redhealthbar, tankdrones[i][j].icon);
 					}
 					
 				}
@@ -460,18 +591,22 @@ public class TankTakeover extends Application {
 					switch (event.getCode()) {
 						case A:
 							tankplayers[0].turnleft = true;
+							tankplayers[0].lastpressed = -1;
 							break;
 						case D:
 							tankplayers[0].turnright = true;
+							tankplayers[0].lastpressed = 1;
 							break;
 						case W:
 							tankplayers[0].shooting = true;
 							break;
 						case J:
 							tankplayers[1].turnleft = true;
+							tankplayers[1].lastpressed = -1;
 							break;
 						case L:
 							tankplayers[1].turnright = true;
+							tankplayers[1].lastpressed = 1;
 							break;
 						case I:
 							tankplayers[1].shooting = true;
@@ -529,6 +664,7 @@ public class TankTakeover extends Application {
 						tankplayers[i].moveLR();
 						tankplayers[i].updateBarrel();
 						tankplayers[i].updateHealthDisplay();
+						tankplayers[i].updateSightLine();
 						
 						if (tankplayers[i].fireBullet()) {
 							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, new Circle()));
@@ -544,25 +680,42 @@ public class TankTakeover extends Application {
 						
 						if (tankdrones[i / 7][i % 7] != null) {
 							tankdrones[i / 7][i % 7].updateHealthDisplay();
+							tankdrones[i / 7][i % 7].displayHealthBar();
 							
-							if (!tankdrones[i / 7][i % 7].shooting && tankdrones[i / 7][i % 7].owner != -1) {
-								
-								if (!tankdrones[i / 7][i % 7].targeting) {
-									tankdrones[i / 7][i % 7].findNewTarget(tankdrones, tankplayers);
-								} else {
+							if (tankdrones[i / 7][i % 7].clazz != 4) {
+							
+								if (!tankdrones[i / 7][i % 7].shooting && tankdrones[i / 7][i % 7].owner != -1) {
 									
-									if (tankdrones[i / 7][i % 7].activetarget != 3 && tankdrones[i / 7][i % 7].activetarget != 73) {
-										tankdrones[i / 7][i % 7].turnToTarget(tankdrones[tankdrones[i / 7][i % 7].activetarget / 7][tankdrones[i / 7][i % 7].activetarget % 7].centerx, tankdrones[tankdrones[i / 7][i % 7].activetarget / 7][tankdrones[i / 7][i % 7].activetarget % 7].centery);
+									if (!tankdrones[i / 7][i % 7].targeting) {
+										tankdrones[i / 7][i % 7].findNewTarget(tankdrones, tankplayers);
 									} else {
 										
-										if (tankdrones[i / 7][i % 7].activetarget == 3) {
-											tankdrones[i / 7][i % 7].turnToTarget(tankplayers[0].centerx, tankplayers[0].centery);
+										if (tankdrones[i / 7][i % 7].activetarget != 3 && tankdrones[i / 7][i % 7].activetarget != 73) {
+											tankdrones[i / 7][i % 7].turnToTarget(tankdrones[tankdrones[i / 7][i % 7].activetarget / 7][tankdrones[i / 7][i % 7].activetarget % 7].centerx, tankdrones[tankdrones[i / 7][i % 7].activetarget / 7][tankdrones[i / 7][i % 7].activetarget % 7].centery);
 										} else {
-											tankdrones[i / 7][i % 7].turnToTarget(tankplayers[1].centerx, tankplayers[1].centery);
+											
+											if (tankdrones[i / 7][i % 7].activetarget == 3) {
+												tankdrones[i / 7][i % 7].turnToTarget(tankplayers[0].centerx, tankplayers[0].centery);
+											} else {
+												tankdrones[i / 7][i % 7].turnToTarget(tankplayers[1].centerx, tankplayers[1].centery);
+											}
+											
 										}
 										
+										tankdrones[i / 7][i % 7].updateBarrel(tankdrones[i / 7][i % 7].getBarrelLength());
 									}
 									
+								}
+								
+							} else if (tankdrones[i / 7][i % 7].owner != -1) {
+								
+								if (!tankdrones[i / 7][i % 7].targeting) {
+									tankdrones[i / 7][i % 7].findNewTargetGuard(allprojectiles);
+								}
+								
+								if (tankdrones[i / 7][i % 7].targeting) {
+									TankProjectile tempbullet = allprojectiles.get(tankdrones[i / 7][i % 7].activetarget);
+									tankdrones[i / 7][i % 7].turnToTargetGuard(tempbullet.centerx, tempbullet.centery, tempbullet.speed, tempbullet.angle);
 									tankdrones[i / 7][i % 7].updateBarrel(tankdrones[i / 7][i % 7].getBarrelLength());
 								}
 								
@@ -587,6 +740,16 @@ public class TankTakeover extends Application {
 						if (allprojectiles.get(i).centerx < 0 || allprojectiles.get(i).centerx > STAGE_WIDTH || allprojectiles.get(i).centery < 0 || allprojectiles.get(i).centery > STAGE_HEIGHT) {
 							allprojectiles.get(i).body.setVisible(false);
 							allprojectiles.remove(i);
+							
+							for (j = 0; j < 77; j++) {
+								
+								if (tankdrones[j / 7][j % 7] != null && tankdrones[j / 7][j % 7].clazz == 4) {
+									tankdrones[j / 7][j % 7].targeting = false;
+									tankdrones[j / 7][j % 7].shooting = false;
+								}
+								
+							}
+							
 							bullettoborder = true;
 						}
 						
@@ -594,7 +757,8 @@ public class TankTakeover extends Application {
 							
 							if (tankdrones[j / 7][j % 7] != null) {
 							
-								if (allprojectiles.get(i).body.getBoundsInParent().intersects(tankdrones[j / 7][j % 7].base.getBoundsInParent()) && allprojectiles.get(i).owner != tankdrones[j / 7][j % 7].owner) {
+								if (allprojectiles.get(i).body.getBoundsInParent().intersects(tankdrones[j / 7][j % 7].base.getBoundsInParent()) && allprojectiles.get(i).owner != tankdrones[j / 7][j % 7].owner && allprojectiles.get(i).size != 4) {
+									tankdrones[j / 7][j % 7].lastdamaged = 0;
 									
 									if (tankdrones[j / 7][j % 7].owner == -1) {
 										tankdrones[j / 7][j % 7].currenthealth -= (allprojectiles.get(i).damage * (allprojectiles.get(i).owner == 0 ? -1 : 1));
@@ -624,6 +788,16 @@ public class TankTakeover extends Application {
 									
 									allprojectiles.get(i).body.setVisible(false);
 									allprojectiles.remove(i);
+									
+									for (j = 0; j < 77; j++) {
+										
+										if (tankdrones[j / 7][j % 7] != null && tankdrones[j / 7][j % 7].clazz == 4) {
+											tankdrones[j / 7][j % 7].targeting = false;
+											tankdrones[j / 7][j % 7].shooting = false;
+										}
+										
+									}
+									
 									bullettotank = true;
 								}
 								
@@ -633,10 +807,19 @@ public class TankTakeover extends Application {
 						
 						for (j = 0; j < 2 && !(bullettoborder || bullettotank); j++) {
 							
-							if (allprojectiles.get(i).body.getBoundsInParent().intersects(tankplayers[j].base.getBoundsInParent()) && allprojectiles.get(i).owner != j) {
+							if (allprojectiles.get(i).body.getBoundsInParent().intersects(tankplayers[j].base.getBoundsInParent()) && allprojectiles.get(i).owner != j && allprojectiles.get(i).size != 4) {
 								tankplayers[j].currenthealth -= allprojectiles.get(i).damage;
 								allprojectiles.get(i).body.setVisible(false);
 								allprojectiles.remove(i);
+								
+								for (j = 0; j < 77; j++) {
+									
+									if (tankdrones[j / 7][j % 7] != null && tankdrones[j / 7][j % 7].clazz == 4) {
+										tankdrones[j / 7][j % 7].findNewTargetGuard(allprojectiles);
+									}
+									
+								}
+								
 								bullettotank = true;
 							}
 							
@@ -664,6 +847,14 @@ public class TankTakeover extends Application {
 									} else {
 										allprojectiles.remove(i);
 										allprojectiles.remove(j);
+									}
+									
+								}
+								
+								for (j = 0; j < 77; j++) {
+									
+									if (tankdrones[j / 7][j % 7] != null && tankdrones[j / 7][j % 7].clazz == 4) {
+										tankdrones[j / 7][j % 7].findNewTargetGuard(allprojectiles);
 									}
 									
 								}
