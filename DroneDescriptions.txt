@@ -12,7 +12,7 @@ Damage: High
 Firing speed: Slow
 Drone 2: Sprayer
 Large, powerful tanks with rapid firing speed. Overwhelms
-enemy tanks with large numbers of suppressing bullets.
+enemies with suppressing bullets, but can't target players.
 Health: High
 Damage: Minuscule
 Firing speed: Fast
