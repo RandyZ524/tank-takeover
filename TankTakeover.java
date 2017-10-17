@@ -73,7 +73,7 @@ class PlayerTank {
 		
 		int turnangle = swiveltime < 60 ? swiveltime / 12 : 5;
 		angle += turnright ? turnangle : (turnleft ? -turnangle : 0);
-		Math.floorMod(angle, 360);
+		angle = Math.floorMod(angle, 360);
 		return;
 	}
 	
@@ -580,14 +580,18 @@ class TankProjectile {
 
 class TankDescriptions {
 	Text name, descriptionline1, descriptionline2, health, damage, firingspeed;
+	Rectangle healthrect, damagerect, firingspeedrect;
 	
-	TankDescriptions(Text name, Text descriptionline1, Text descriptionline2, Text health, Text damage, Text firingspeed) {
+	TankDescriptions(Text name, Text descriptionline1, Text descriptionline2, Text health, Text damage, Text firingspeed, Rectangle healthrect, Rectangle damagerect, Rectangle firingspeedrect) {
 		this.name = name;
 		this.descriptionline1 = descriptionline1;
 		this.descriptionline2 = descriptionline2;
 		this.health = health;
 		this.damage = damage;
 		this.firingspeed = firingspeed;
+		this.healthrect = healthrect;
+		this.damagerect = damagerect;
+		this.firingspeedrect = firingspeedrect;
 	}
 	
 	public void setDescriptionFont() {
@@ -600,6 +604,93 @@ class TankDescriptions {
 		return;
 	}
 	
+	public void setStatsRects() {
+		Color tempcolor = Color.WHITE;
+		int templength = 0;
+		
+		switch (health.getText()) {
+			case "Low":
+				tempcolor = Color.BLUE;
+				templength = 10;
+				break;
+			case "Medium":
+				tempcolor = Color.GREEN;
+				templength = 25;
+				break;
+			case "High":
+				tempcolor = Color.YELLOW;
+				templength = 50;
+				break;
+			case "Extreme":
+				tempcolor = Color.RED;
+				templength = 100;
+				break;
+		}
+		
+		healthrect.setFill(tempcolor);
+		healthrect.setWidth(templength);
+		healthrect.setArcWidth(8);
+		healthrect.setArcHeight(8);
+		
+		switch (damage.getText()) {
+			case "None":
+				tempcolor = Color.BLACK;
+				templength = 5;
+				break;
+			case "Minuscule":
+				tempcolor = Color.BLUE;
+				templength = 10;
+				break;
+			case "Low":
+				tempcolor = Color.GREEN;
+				templength = 25;
+				break;
+			case "High":
+				tempcolor = Color.YELLOW;
+				templength = 50;
+				break;
+			case "Extreme":
+				tempcolor = Color.RED;
+				templength = 100;
+				break;
+		}
+		
+		damagerect.setFill(tempcolor);
+		damagerect.setWidth(templength);
+		damagerect.setArcWidth(8);
+		damagerect.setArcHeight(8);
+		
+		switch (firingspeed.getText()) {
+			case "Sluggish":
+				tempcolor = Color.BLACK;
+				templength = 5;
+				break;
+			case "Slow":
+				tempcolor = Color.BLUE;
+				templength = 10;
+				break;
+			case "Average":
+				tempcolor = Color.GREEN;
+				templength = 25;
+				break;
+			case "Fast":
+				tempcolor = Color.YELLOW;
+				templength = 50;
+				break;
+			case "Extreme":
+				tempcolor = Color.RED;
+				templength = 100;
+				break;
+		}
+		
+		firingspeedrect.setFill(tempcolor);
+		firingspeedrect.setWidth(templength);
+		firingspeedrect.setArcWidth(8);
+		firingspeedrect.setArcHeight(8);
+		
+		return;
+	}
+	
 	public void reverseDescriptionsVisible(boolean tempvisible) {
 		name.setVisible(tempvisible);
 		descriptionline1.setVisible(tempvisible);
@@ -607,6 +698,9 @@ class TankDescriptions {
 		health.setVisible(tempvisible);
 		damage.setVisible(tempvisible);
 		firingspeed.setVisible(tempvisible);
+		healthrect.setVisible(tempvisible);
+		damagerect.setVisible(tempvisible);
+		firingspeedrect.setVisible(tempvisible);
 		return;
 	}
 	
@@ -653,14 +747,24 @@ public class TankTakeover extends Application {
 	Image[] levelpics = new Image[5];
 	ImageView[] demopictures = new ImageView[5];
 	ImageView[] levelpictures = new ImageView[5];
+	Rectangle[] demobackgrounds = new Rectangle[5];
 	
 	ImageView startbutton = new ImageView();
 	ImageView helpbutton = new ImageView();
 	ImageView backbutton = new ImageView();
+	
 	Rectangle selectionbox = new Rectangle(STAGE_WIDTH + 10, 17, 170, 136);
+	Rectangle namebase = new Rectangle(0, 25, 0, 34);
+	Rectangle descriptionbase = new Rectangle(150, 515, 630, 65);
+	Rectangle statsbase = new Rectangle(750, 175, 235, 150);
+	
 	Line redcrossA = new Line(225, 438, 485, 565);
 	Line redcrossB = new Line(225, 565, 485, 438);
+	
 	Text nolevelselection = new Text(250, 420, "Please select a stage!");
+	Text healthtext = new Text(808, 200, "Health:");
+	Text damagetext = new Text(792, 250, "Damage:");
+	Text firingspeedtext = new Text(760, 300, "Firing speed:");
  
 	public void start(Stage primaryStage) throws Exception {
 		Image stbutton = new Image("Start_Button.png");
@@ -686,6 +790,27 @@ public class TankTakeover extends Application {
 		selectionbox.setArcWidth(20);
 		selectionbox.setArcHeight(20);
 		
+		namebase.setStroke(Color.BLACK);
+		namebase.setFill(Color.GRAY);
+		namebase.setStrokeWidth(4);
+		namebase.setArcWidth(20);
+		namebase.setArcHeight(20);
+		namebase.setVisible(false);
+		
+		descriptionbase.setStroke(Color.BLACK);
+		descriptionbase.setFill(Color.GRAY);
+		descriptionbase.setStrokeWidth(4);
+		descriptionbase.setArcWidth(20);
+		descriptionbase.setArcHeight(20);
+		descriptionbase.setVisible(false);
+		
+		statsbase.setStroke(Color.BLACK);
+		statsbase.setFill(Color.GRAY);
+		statsbase.setStrokeWidth(4);
+		statsbase.setArcWidth(20);
+		statsbase.setArcHeight(20);
+		statsbase.setVisible(false);
+		
 		redcrossA.setStroke(Color.RED);
 		redcrossB.setStroke(Color.RED);
 		redcrossA.setStrokeWidth(5);
@@ -698,9 +823,16 @@ public class TankTakeover extends Application {
 		nolevelselection.setFont(Font.font("Verdana", 20));
 		nolevelselection.setVisible(false);
 		
+		healthtext.setFont(Font.font("Verdana", 16));
+		healthtext.setVisible(false);
+		damagetext.setFont(Font.font("Verdana", 16));
+		damagetext.setVisible(false);
+		firingspeedtext.setFont(Font.font("Verdana", 16));
+		firingspeedtext.setVisible(false);
+		
 		primaryStage.setTitle("Tank Takeover");
 		
-		Group root = new Group(startbutton, helpbutton, backbutton, selectionbox, redcrossA, redcrossB, nolevelselection);
+		Group root = new Group(startbutton, helpbutton, backbutton, selectionbox, namebase, descriptionbase, statsbase, redcrossA, redcrossB, nolevelselection, healthtext, damagetext, firingspeedtext);
 		Scene scene = new Scene(root, STAGE_WIDTH, STAGE_HEIGHT);
 		
 		for (i = 0; i < 5; i++) {
@@ -709,6 +841,13 @@ public class TankTakeover extends Application {
 			demopictures[i].setLayoutX(50 - (icons[i].getWidth() / 2));
 			demopictures[i].setLayoutY(50 + (i * 100) + (50 - (icons[i].getHeight() / 2)));
 			demopictures[i].setVisible(false);
+			
+			demobackgrounds[i] = new Rectangle(20, 70 + (i * 100), 60, 60);
+			demobackgrounds[i].setStroke(Color.BLACK);
+			demobackgrounds[i].setFill(Color.TRANSPARENT);
+			demobackgrounds[i].setStrokeWidth(5);
+			demobackgrounds[i].toFront();
+			demobackgrounds[i].setVisible(false);
 			
 			levelpics[i] = new Image("Level_" + (i + 1) + "_Picture.png");
 			levelpictures[i] = new ImageView(levelpics[i]);
@@ -736,11 +875,11 @@ public class TankTakeover extends Application {
 				
 			});
 			
-			root.getChildren().addAll(demopictures[i], levelpictures[i]);
+			root.getChildren().addAll(demopictures[i], levelpictures[i], demobackgrounds[i]);
 		}
 		
-		tankplayers[0] = new PlayerTank(0, 0, 3, 0, 30, 30, 500, 100, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.BLUE), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - 1200), new Text(DISTANCE_FROM_BORDER_X - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
-		tankplayers[1] = new PlayerTank(0, 10, 3, 0, 30, 30, 500, 100, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.RED), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - 1200), new Text(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
+		tankplayers[0] = new PlayerTank(0, 0, 3, 0, 30, 30, 5, 100, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.BLUE), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Line(DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - 1200), new Text(DISTANCE_FROM_BORDER_X - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
+		tankplayers[1] = new PlayerTank(0, 10, 3, 0, 30, 30, 5, 100, 5, 3, 1, 0, 0, false, false, false, new Circle(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), 20, Color.RED), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - LENGTH_OF_BARREL), new Line(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE), DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) - 1200), new Text(DISTANCE_FROM_BORDER_X + (10 * LENGTH_OF_GRID_SQUARE) - 10, DISTANCE_FROM_BORDER_Y + (3 * LENGTH_OF_GRID_SQUARE) + 4, ""));
 		
 		tankplayers[0].barrel.setStroke(Color.BLUE);
 		tankplayers[0].sightline.setStroke(Color.BLUE);
@@ -777,15 +916,17 @@ public class TankTakeover extends Application {
 				name = linedescriptions[i * 6].substring(9, linedescriptions[i * 6].length());
 				descriptionline1 = linedescriptions[i * 6 + 1];
 				descriptionline2 = linedescriptions[i * 6 + 2];
-				health = linedescriptions[i * 6 + 3].substring(8, linedescriptions[i * 6 + 3].length());
-				damage = linedescriptions[i * 6 + 4].substring(8, linedescriptions[i * 6 + 4].length());
-				firingspeed = linedescriptions[i * 6 + 5].substring(14, linedescriptions[i * 6 + 5].length());
+				health = linedescriptions[i * 6 + 3].substring(8, linedescriptions[i * 6 + 3].length()).trim();
+				damage = linedescriptions[i * 6 + 4].substring(8, linedescriptions[i * 6 + 4].length()).trim();
+				firingspeed = linedescriptions[i * 6 + 5].substring(14, linedescriptions[i * 6 + 5].length()).trim();
 				
-				alldescriptions[i] = new TankDescriptions(new Text(500, 50, name), new Text(160, 540, descriptionline1), new Text(160, 570, descriptionline2), new Text(900, 200, health), new Text(900, 250, damage), new Text(900, 300, firingspeed));
+				alldescriptions[i] = new TankDescriptions(new Text(500, 50, name), new Text(160, 540, descriptionline1), new Text(160, 570, descriptionline2), new Text(875, 200, health), new Text(875, 250, damage), new Text(875, 300, firingspeed), new Rectangle(875, 210, 0, 4), new Rectangle(875, 260, 0, 4), new Rectangle(875, 310, 0, 4));
 				alldescriptions[i].setDescriptionFont();
+				alldescriptions[i].setStatsRects();
 				alldescriptions[i].reverseDescriptionsVisible(false);
 				alldescriptions[i].name.setLayoutX(-(alldescriptions[i].name.getBoundsInLocal().getWidth() / 2));
-				root.getChildren().addAll(alldescriptions[i].name, alldescriptions[i].descriptionline1, alldescriptions[i].descriptionline2, alldescriptions[i].health, alldescriptions[i].damage, alldescriptions[i].firingspeed);
+				TankDescriptions tempdesc = alldescriptions[i];
+				root.getChildren().addAll(tempdesc.name, tempdesc.descriptionline1, tempdesc.descriptionline2, tempdesc.health, tempdesc.damage, tempdesc.firingspeed, tempdesc.healthrect, tempdesc.damagerect, tempdesc.firingspeedrect);
 			}
 			
 		} catch (IOException exc) {
@@ -816,7 +957,6 @@ public class TankTakeover extends Application {
 			public void handle(MouseEvent event) {
 				
 				if (levelselection != 0) {
-				
 					inthelevel = true;
 					startbutton.setVisible(false);
 					helpbutton.setVisible(false);
@@ -924,9 +1064,10 @@ public class TankTakeover extends Application {
 				for (i = 0; i < 5; i++) {
 					levelpictures[i].setVisible(false);
 					demopictures[i].setVisible(true);
+					demobackgrounds[i].setVisible(true);
 					final int index = i;
 					
-					demopictures[i].addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+					demobackgrounds[i].addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
 						@Override
 						
 						public void handle(MouseEvent event) {
@@ -935,6 +1076,14 @@ public class TankTakeover extends Application {
 							for (j = 0; j < 5; j++) {
 								tankdemos[j].reverseDronesVisible(j == index ? true : false);
 								alldescriptions[j].reverseDescriptionsVisible(j == index ? true : false);
+								namebase.setVisible(true);
+								descriptionbase.setVisible(true);
+								statsbase.setVisible(true);
+								namebase.setX(500 - (alldescriptions[index].name.getBoundsInLocal().getWidth() / 2) - 10);
+								namebase.setWidth(alldescriptions[index].name.getBoundsInLocal().getWidth() + 20);
+								healthtext.setVisible(true);
+								damagetext.setVisible(true);
+								firingspeedtext.setVisible(true);
 							}
 							
 						}
@@ -949,12 +1098,19 @@ public class TankTakeover extends Application {
 					public void handle(MouseEvent event) {
 						inhelp = false;
 						backbutton.setVisible(false);
+						namebase.setVisible(false);
+						descriptionbase.setVisible(false);
+						statsbase.setVisible(false);
+						healthtext.setVisible(false);
+						damagetext.setVisible(false);
+						firingspeedtext.setVisible(false);
 						startbutton.setVisible(true);
 						helpbutton.setVisible(true);
 						selectionbox.setVisible(true);
 						
 						for (i = 0; i < 5; i++) {
 							demopictures[i].setVisible(false);
+							demobackgrounds[i].setVisible(false);
 							levelpictures[i].setVisible(true);
 							tankdemos[i].reverseDronesVisible(false);
 							alldescriptions[i].reverseDescriptionsVisible(false);
@@ -1303,7 +1459,6 @@ public class TankTakeover extends Application {
 						if (allprojectiles.get(i).offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
 							root.getChildren().remove(allprojectiles.get(i).body);
 							allprojectiles.remove(i);
-							bullettoborder = true;
 						}
 					
 					}
