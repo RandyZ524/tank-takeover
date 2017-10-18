@@ -1,30 +1,30 @@
 Drone 0: Soldier
 The basic tank. Fires weak yet consistent shots, and
 can absorb Annihilator bullets quite well for other tanks.
-Health: Medium
-Damage: Low
-Firing speed: Average
+Medium
+Low
+Average
 Drone 1: Sniper
 These accurate tanks can easily snipe down enemies from
 across the map. Fires fast bullets that are hard to stop.
-Health: Low
-Damage: High
-Firing speed: Slow
+Low
+High
+Slow
 Drone 2: Sprayer
 Large, powerful tanks with rapid firing speed. Overwhelms
 enemies with suppressing bullets, but can't target players.
-Health: High
-Damage: Minuscule
-Firing speed: Fast
+High
+Minuscule
+Fast
 Drone 3: Annihilator
 The strongest, deadliest tank in the game. Often times
 there's only one on the map, and for very good reason!
-Health: Extreme
-Damage: Extreme
-Firing speed: Sluggish
+Extreme
+Extreme
+Sluggish
 Drone 4: Guard
 Protect it well and it will protect you. Rapidly predicts,
 intercepts, and destroys enemy bullets within a small range.
-Health: High
-Damage: None
-Firing speed: Extreme
+High
+None
+Extreme
