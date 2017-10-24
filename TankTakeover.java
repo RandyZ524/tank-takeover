@@ -83,6 +83,8 @@ class PlayerTank {
 				base.setRadius(20);
 				barrel.setEndY(getTrueY() - 25);
 				barrel.setStrokeWidth(6);
+				sightlinereflect.setStrokeWidth(0);
+				sightlinereflect2.setStrokeWidth(0);
 				break;
 			case 1:
 				maxreload = currentreload = 3;
@@ -93,6 +95,8 @@ class PlayerTank {
 				base.setRadius(25);
 				barrel.setEndY(getTrueY() - 30);
 				barrel.setStrokeWidth(4);
+				sightlinereflect.setStrokeWidth(0);
+				sightlinereflect2.setStrokeWidth(0);
 				break;
 			case 2:
 				maxreload = currentreload = 90;
@@ -104,6 +108,8 @@ class PlayerTank {
 				base.setRadius(15);
 				barrel.setEndY(getTrueY() - 22);
 				barrel.setStrokeWidth(3);
+				sightlinereflect.setStrokeWidth(0);
+				sightlinereflect2.setStrokeWidth(0);
 				break;
 			case 3:
 				maxreload = currentreload = 10;
@@ -119,11 +125,13 @@ class PlayerTank {
 				sightlinereflect.setEndX(getTrueX());
 				sightlinereflect.setEndY(1200);
 				sightlinereflect.setStroke(sightline.getStroke());
+				sightlinereflect.setStrokeWidth(1);
 				sightlinereflect2.setStartX(getTrueX());
 				sightlinereflect2.setStartY(0);
 				sightlinereflect2.setEndX(getTrueX());
 				sightlinereflect2.setEndY(1200);
 				sightlinereflect2.setStroke(sightline.getStroke());
+				sightlinereflect2.setStrokeWidth(1);
 				break;
 		}
 		
@@ -239,6 +247,7 @@ class PlayerTank {
 		}
 		
 		if (shooting && currentreload == 0) {
+			System.out.println("test");
 			currentreload = maxreload;
 			return true;
 		}
@@ -1031,7 +1040,7 @@ public class TankTakeover extends Application {
 		for (i = 0; i < 2; i++) {
 			tankplayers[i] = new PlayerTank(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, new Circle(), new Line(), new Line(), new Line(), new Line(), new Text());
 			tankplayers[i].create(i);
-			tankplayers[i].setPlayerClass(2);
+			tankplayers[i].setPlayerClass(0);
 			tankplayers[i].setClassAttributes();
 		}
 		
@@ -1072,7 +1081,6 @@ public class TankTakeover extends Application {
 		}
 		
 		for (PlayerTank tankplayer : tankplayers) {
-			tankplayer.setPlayerVisible(false);
 			root.getChildren().addAll(tankplayer.base, tankplayer.barrel, tankplayer.healthdisplay, tankplayer.sightline, tankplayer.sightlinereflect, tankplayer.sightlinereflect2);
 		}
 		
@@ -1256,7 +1264,7 @@ public class TankTakeover extends Application {
 			
 			public void handle(KeyEvent event) {
 				
-				if (inthelevel) {
+				if (!inhelp) {
 					
 					switch (event.getCode()) {
 						case A:
@@ -1294,7 +1302,7 @@ public class TankTakeover extends Application {
 			
 			public void handle(KeyEvent event) {
 				
-				if (inthelevel) {
+				if (!inhelp) {
 					
 					switch (event.getCode()) {
 						case A:
@@ -1315,6 +1323,29 @@ public class TankTakeover extends Application {
 						case I:
 							tankplayers[1].shooting = false;
 							break;
+					}
+					
+					if (!inthelevel) {
+						
+						switch (event.getCode()) {
+							case Q:
+								tankplayers[0].clazz = Math.floorMod(tankplayers[0].clazz - 1, 4);
+								tankplayers[0].setClassAttributes();
+								break;
+							case E:
+								tankplayers[0].clazz = Math.floorMod(tankplayers[0].clazz + 1, 4);
+								tankplayers[0].setClassAttributes();
+								break;
+							case U:
+								tankplayers[1].clazz = Math.floorMod(tankplayers[1].clazz - 1, 4);
+								tankplayers[1].setClassAttributes();
+								break;
+							case O:
+								tankplayers[1].clazz = Math.floorMod(tankplayers[1].clazz + 1, 4);
+								tankplayers[1].setClassAttributes();
+								break;
+						}
+						
 					}
 					
 				}
@@ -1451,7 +1482,7 @@ public class TankTakeover extends Application {
 					}
 					
 					//Collision detection logic for bullets
-					for (i = 0; i < allprojectiles.size() - 1; i++) {
+					for (i = 0; i < allprojectiles.size(); i++) {
 						allprojectiles.get(i).updatePosition(); //uses bullet speed and angle to determine the next location each frame
 						allprojectiles.get(i).body.toBack(); //ensures that all bullets are behind everything else
 						TankProjectile tempbullet = allprojectiles.get(i);
@@ -1546,7 +1577,7 @@ public class TankTakeover extends Application {
 							
 						}
 						
-						for (j = 0; j < allprojectiles.size() - 1 && allprojectiles.get(i).owner != TB_ELIMINATED; j++) {
+						for (j = 0; j < allprojectiles.size() && allprojectiles.get(i).owner != TB_ELIMINATED; j++) {
 							
 							if (allprojectiles.get(j).owner != allprojectiles.get(i).owner && allprojectiles.get(j).owner != TB_ELIMINATED) {
 								
@@ -1609,6 +1640,60 @@ public class TankTakeover extends Application {
 							allprojectiles.remove(i);
 						}
 					
+					}
+					
+				} else {
+					
+					for (i = 0; i < NUM_OF_PLAYERS; i++) {
+						tankplayers[i].moveLR(); //takes keyboard inputs to turn the players
+						tankplayers[i].updateBarrel(); //updates the graphical appearance of the barrel to follow the angle
+						tankplayers[i].updateHealthDisplay(); //updates the numerical health display
+						tankplayers[i].sightline.setVisible(false);
+						tankplayers[i].sightlinereflect.setVisible(false);
+						tankplayers[i].sightlinereflect2.setVisible(false);
+						
+						if (tankplayers[i].fireBullet()) {
+							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, new Circle()));
+							PlayerTank tempplayer = tankplayers[i];
+							allprojectiles.get(allprojectiles.size() - 1).create(i, tempplayer.getTrueX(), tempplayer.getTrueY(), tempplayer.angle, tempplayer.bulletspeed, tempplayer.bulletsize, tempplayer.damage, tempplayer.bulletpenetration, 99999);
+							root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
+							tankplayers[i].moveToFront();
+						}
+						
+					}
+					
+					for (i = 0; i < allprojectiles.size(); i++) {
+						allprojectiles.get(i).updatePosition(); //uses bullet speed and angle to determine the next location each frame
+						allprojectiles.get(i).body.toBack(); //ensures that all bullets are behind everything else
+						TankProjectile tempbullet = allprojectiles.get(i);
+					
+						if (allprojectiles.get(i).offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
+							
+							if (allprojectiles.get(i).damage != 2) {
+								root.getChildren().remove(allprojectiles.get(i).body);
+								allprojectiles.get(i).owner = TB_ELIMINATED;
+							} else {
+								allprojectiles.get(i).body.setVisible(true);
+								
+								if (allprojectiles.get(i).centerx < 0 || allprojectiles.get(i).centerx > STAGE_WIDTH) {
+									allprojectiles.get(i).angle = 360 - allprojectiles.get(i).angle; 
+								} else if (allprojectiles.get(i).centery < 0 || allprojectiles.get(i).centery > STAGE_HEIGHT) {
+									allprojectiles.get(i).angle = 180 - allprojectiles.get(i).angle; 
+								}
+								
+								allprojectiles.get(i).updatePosition();
+							}
+							
+						}
+						
+					}
+					
+					for (i = allprojectiles.size() - 1; i >= 0; i--) {
+						
+						if (allprojectiles.get(i).owner == TB_ELIMINATED) {
+							allprojectiles.remove(i);
+						}
+						
 					}
 					
 				}
