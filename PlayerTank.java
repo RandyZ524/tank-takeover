@@ -3,14 +3,15 @@ import javafx.scene.shape.*;
 import javafx.scene.paint.Color;
 
 public class PlayerTank {
-	int clazz, centerx, centery, angle, maxreload, currentreload, damage, currenthealth, bulletspeed, bulletsize, bulletpenetration, swiveltime, lastpressed;
-	boolean turnleft, turnright, shooting;
+	int clazz, team, centerx, centery, angle, maxreload, currentreload, damage, currenthealth, bulletspeed, bulletsize, bulletpenetration, swiveltime, lastpressed;
+	boolean turnleft, turnright, shooting, ricochet, megamind;
 	Circle base;
 	Line barrel, sightline, sightlinereflect, sightlinereflect2;
 	Text healthdisplay;
 	
-	PlayerTank(int clazz, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, int swiveltime, int lastpressed, boolean turnleft, boolean turnright, boolean shooting, Circle base, Line barrel, Line sightline, Line sightlinereflect, Line sightlinereflect2, Text healthdisplay) {
+	PlayerTank(int clazz, int team, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, int swiveltime, int lastpressed, boolean turnleft, boolean turnright, boolean shooting, boolean ricochet, boolean megamind, Circle base, Line barrel, Line sightline, Line sightlinereflect, Line sightlinereflect2, Text healthdisplay) {
 		this.clazz = clazz;
+		this.team = team;
 		this.centerx = centerx;
 		this.centery = centery;
 		this.angle = angle;
@@ -25,6 +26,8 @@ public class PlayerTank {
 		this.turnleft = turnleft;
 		this.turnright = turnright;
 		this.shooting = shooting;
+		this.ricochet = ricochet;
+		this.megamind = megamind;
 		this.base = base;
 		this.barrel = barrel;
 		this.sightline = sightline;
@@ -35,21 +38,25 @@ public class PlayerTank {
 	
 	public void create(int tempid) {
 		clazz = 0;
-		centerx = tempid == 0 ? 0 : 10;
+		team = tempid;
+		centerx = team == 0 ? 0 : 10;
 		centery = 3;
+		bulletsize = 3;
 		bulletpenetration = 1;
+		ricochet = false;
+		megamind = false;
 		base.setCenterX(getTrueX());
 		base.setCenterY(getTrueY());
-		base.setFill(tempid == 0 ? Color.BLUE : Color.RED);
+		base.setFill(team == 0 ? Color.BLUE : Color.RED);
 		barrel.setStartX(getTrueX());
 		barrel.setStartY(getTrueY());
 		barrel.setEndX(getTrueX());
-		barrel.setStroke(tempid == 0 ? Color.BLUE : Color.RED);
+		barrel.setStroke(team == 0 ? Color.BLUE : Color.RED);
 		sightline.setStartX(getTrueX());
 		sightline.setStartY(getTrueY());
 		sightline.setEndX(getTrueX());
 		sightline.setEndY(getTrueY() - 1200);
-		sightline.setStroke(tempid == 0 ? Color.BLUE : Color.RED);
+		sightline.setStroke(team == 0 ? Color.BLUE : Color.RED);
 		healthdisplay.setX(getTrueX() - 10);
 		healthdisplay.setY(getTrueY() + 4);
 	}
@@ -66,25 +73,16 @@ public class PlayerTank {
 				damage = 10;
 				currenthealth = 100;
 				bulletspeed = 5;
-				bulletsize = 3;
 				base.setRadius(20);
-				barrel.setEndY(getTrueY() - 25);
 				barrel.setStrokeWidth(6);
-				sightlinereflect.setStrokeWidth(0);
-				sightlinereflect2.setStrokeWidth(0);
 				break;
 			case 1:
 				maxreload = currentreload = 3;
 				damage = 1;
 				currenthealth = 120;
 				bulletspeed = 4;
-				bulletsize = 3;
-				bulletpenetration = 1;
 				base.setRadius(25);
-				barrel.setEndY(getTrueY() - 30);
 				barrel.setStrokeWidth(4);
-				sightlinereflect.setStrokeWidth(0);
-				sightlinereflect2.setStrokeWidth(0);
 				break;
 			case 2:
 				maxreload = currentreload = 90;
@@ -94,36 +92,49 @@ public class PlayerTank {
 				bulletsize = 2;
 				bulletpenetration = 3;
 				base.setRadius(15);
-				barrel.setEndY(getTrueY() - 22);
 				barrel.setStrokeWidth(3);
-				sightlinereflect.setStrokeWidth(0);
-				sightlinereflect2.setStrokeWidth(0);
 				break;
 			case 3:
 				maxreload = currentreload = 10;
 				damage = 2;
 				currenthealth = 100;
 				bulletspeed = 3;
-				bulletsize = 3;
 				base.setRadius(30);
-				barrel.setEndY(getTrueY() - 34);
 				barrel.setStrokeWidth(3);
-				sightlinereflect.setStartX(getTrueX());
-				sightlinereflect.setStartY(0);
-				sightlinereflect.setEndX(getTrueX());
-				sightlinereflect.setEndY(1200);
-				sightlinereflect.setStroke(sightline.getStroke());
-				sightlinereflect.setStrokeWidth(1);
-				sightlinereflect2.setStartX(getTrueX());
-				sightlinereflect2.setStartY(0);
-				sightlinereflect2.setEndX(getTrueX());
-				sightlinereflect2.setEndY(1200);
-				sightlinereflect2.setStroke(sightline.getStroke());
-				sightlinereflect2.setStrokeWidth(1);
+				ricochet = true;
+				break;
+			case 4:
+				maxreload = currentreload = 40;
+				damage = 10;
+				currenthealth = 100;
+				bulletspeed = 5;
+				base.setRadius(35);
+				barrel.setStrokeWidth(5);
+				megamind = true;
 				break;
 		}
 		
+		barrel.setEndY(getTrueY() - getBarrelLength());
 		healthdisplay.setText(Integer.toString(currenthealth));
+		
+		if (ricochet) {
+			sightlinereflect.setStartX(getTrueX());
+			sightlinereflect.setStartY(0);
+			sightlinereflect.setEndX(getTrueX());
+			sightlinereflect.setEndY(1200);
+			sightlinereflect.setStroke(sightline.getStroke());
+			sightlinereflect.setStrokeWidth(1);
+			sightlinereflect2.setStartX(getTrueX());
+			sightlinereflect2.setStartY(0);
+			sightlinereflect2.setEndX(getTrueX());
+			sightlinereflect2.setEndY(1200);
+			sightlinereflect2.setStroke(sightline.getStroke());
+			sightlinereflect2.setStrokeWidth(1);
+		} else {
+			sightlinereflect.setStrokeWidth(0);
+			sightlinereflect2.setStrokeWidth(0);
+		}
+		
 	}
 	
 	public void setPlayerVisible(boolean tempvisible) {
@@ -142,16 +153,9 @@ public class PlayerTank {
 	}
 	
 	public void moveLR() {
-		
-		if (!(turnright || turnleft) && swiveltime < 12 && swiveltime != 0) {
-			angle += lastpressed == 1 ? 1 : -1;
-		} 
-		
-		if (turnright || turnleft) {
-			swiveltime++;
-		} else if (swiveltime != 0) {
-			swiveltime = 0;
-		}
+		if (!(turnright || turnleft) && swiveltime < 12 && swiveltime != 0) angle += lastpressed == 1 ? 1 : -1;
+		if (turnright || turnleft) swiveltime++;
+		else if (swiveltime != 0) swiveltime = 0;
 		
 		int turnangle = swiveltime < 60 ? swiveltime / 12 : 5;
 		angle += turnright ? turnangle : (turnleft ? -turnangle : 0);
@@ -188,13 +192,8 @@ public class PlayerTank {
 			while (inbounds) {
 				tempx += Math.sin(Math.toRadians(angle));
 				tempy -= Math.cos(Math.toRadians(angle));
-				
-				if (tempx < 0 || tempx > 1000) {
-					inbounds = false;
-				} else if (tempy < 0 || tempy > 600) {
-					inbounds = false;
-				}
-				
+				if (tempx < 0 || tempx > 1000) inbounds = false;
+				else if (tempy < 0 || tempy > 600) inbounds = false;
 			}
 			
 			tempangle = (tempx < 0 || tempx > 1000) ? 360 - angle : 180 - angle;
@@ -210,13 +209,8 @@ public class PlayerTank {
 			while (inbounds) {
 				tempx += Math.sin(Math.toRadians(tempangle));
 				tempy -= Math.cos(Math.toRadians(tempangle));
-				
-				if (tempx < 0 || tempx > 1000) {
-					inbounds = false;
-				} else if (tempy < 0 || tempy > 600) {
-					inbounds = false;
-				}
-				
+				if (tempx < 0 || tempx > 1000) inbounds = false;
+				else if (tempy < 0 || tempy > 600) inbounds = false;
 			}
 			
 			tempangle = (tempx < 0 || tempx > 1000) ? 360 - tempangle : 180 - tempangle;
@@ -229,10 +223,7 @@ public class PlayerTank {
 	}
 	
 	public boolean fireBullet() {
-		
-		if (currentreload != 0) {
-			currentreload--;
-		}
+		if (currentreload != 0) currentreload--;
 		
 		if (shooting && currentreload == 0) {
 			currentreload = maxreload;
@@ -249,6 +240,7 @@ public class PlayerTank {
 			case 1: return 30;
 			case 2: return 22;
 			case 3: return 34;
+			case 4: return 37;
 		}
 		
 		return 25;

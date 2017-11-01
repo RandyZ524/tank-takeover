@@ -1,6 +1,9 @@
 import javafx.scene.text.*;
 import javafx.scene.shape.*;
+import javafx.scene.image.*;
 import javafx.scene.paint.Color;
+
+import java.util.*;
 
 public class DroneTank {
 	int clazz, owner, centerx, centery, angle, maxreload, currentreload, damage, maxhealth, currenthealth, bulletspeed, bulletsize, bulletpenetration, bulletrange, activetarget, lastdamaged;
@@ -208,11 +211,11 @@ public class DroneTank {
 		redhealthbar.toFront();
 	}
 	
-	public void toNeutral(int oldowner) {
-		owner = -1;
+	public void toNeutral() {
 		ownerflag.setFill(Color.GRAY);
 		ownerflag.toFront();
-		currenthealth *= oldowner == 0 ? 1 : -1;
+		currenthealth *= owner == 0 ? 1 : -1;
+		owner = -1;
 		targeting = shooting = false;
 		icon.toFront();
 		healthbase.toFront();
@@ -227,18 +230,22 @@ public class DroneTank {
 		ArrayList<Integer> possibletargets = new ArrayList<Integer>();
 		Random random = new Random();
 		
-		for (int i1 = 0; i1 < 77; i1++) {
+		for (DroneTank[] temptankdronerow : temptankdrones) {
 			
-			if (temptankdrones[i1 / 7][i1 % 7] != null && owner != temptankdrones[i1 / 7][i1 % 7].owner) {
-				tempdistance = Math.pow((double) temptankdrones[i1 / 7][i1 % 7].centerx - centerx, 2) + Math.pow((double) temptankdrones[i1 / 7][i1 % 7].centery - centery, 2);
+			for (DroneTank temptankdrone : temptankdronerow) {
 			
-				if (tempdistance < closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
-					closestsquaredistance = Math.pow((double) temptankdrones[i1 / 7][i1 % 7].centerx - centerx, 2) + Math.pow((double) temptankdrones[i1 / 7][i1 % 7].centery - centery, 2);
-					closesttarget = i1;
-					possibletargets.clear();
-					possibletargets.add(i1);
-				} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
-					possibletargets.add(i1);
+				if (temptankdrone != null && owner != temptankdrone.owner) {
+					tempdistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+				
+					if (tempdistance < closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
+						closestsquaredistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+						closesttarget = temptankdrone.centerx * 7 + temptankdrone.centery;
+						possibletargets.clear();
+						possibletargets.add(temptankdrone.centerx * 7 + temptankdrone.centery);
+					} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
+						possibletargets.add(temptankdrone.centerx * 7 + temptankdrone.centery);
+					}
+					
 				}
 				
 			}
@@ -292,9 +299,7 @@ public class DroneTank {
 					closesttarget = i1;
 					possibletargets.clear();
 					possibletargets.add(i1);
-				} else if (tempdistance == closestsquaredistance && owner != tempallprojectiles.get(i1).owner) {
-					possibletargets.add(i1);
-				}
+				} else if (tempdistance == closestsquaredistance) possibletargets.add(i1);
 				
 			}
 			
@@ -322,10 +327,7 @@ public class DroneTank {
 	}
 	
 	public boolean fireBullet() {
-		
-		if (currentreload != 0) {
-			currentreload--;
-		}
+		if (currentreload != 0) currentreload--;
 		
 		if (shooting && currentreload == 0) {
 			currentreload = maxreload;
@@ -352,13 +354,8 @@ public class DroneTank {
 	
 	public void removeHealth(int tempdamage, int tempowner) {
 		lastdamaged = 0;
-		
-		if (owner == -1) {
-			currenthealth -= (tempdamage * (tempowner == 0 ? -1 : 1));
-		} else {
-			currenthealth -= tempdamage;
-		}
-		
+		if (owner == -1) currenthealth -= (tempdamage * (tempowner == 0 ? -1 : 1));
+		else currenthealth -= tempdamage;
 	}
 	
 	public void resetTargeting() {
@@ -374,17 +371,12 @@ public class DroneTank {
 			for (DroneTank[] temptankdronerow : temptankdrones) {
 				
 				for (DroneTank temptankdrone : temptankdronerow) {
-					
-					if (temptankdrone != null && temptankdrone.activetarget == j1) {
-						temptankdrone.resetTargeting();
-					}										
+					if (temptankdrone != null && temptankdrone.activetarget == j1) temptankdrone.resetTargeting();
 				}
 				
 			}
 			
-		} else if (currenthealth <= 0 && owner != -1) {
-			toNeutral(owner);
-		}
+		} else if (currenthealth <= 0 && owner != -1) toNeutral();
 		
 	}
 	

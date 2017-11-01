@@ -46,9 +46,9 @@ public class TankDescriptions {
 		name.setFont(Font.font("Verdana", FontWeight.BOLD, 24));
 		descriptionline1.setFont(Font.font("Verdana", 20));
 		descriptionline2.setFont(Font.font("Verdana", 20));
-		health.setFont(Font.font("Verdana", 16));
-		damage.setFont(Font.font("Verdana", 16));
-		firingspeed.setFont(Font.font("Verdana", 16));
+		health.setFont(Font.font("Verdana", FontWeight.BOLD, 16));
+		damage.setFont(Font.font("Verdana", FontWeight.BOLD, 16));
+		firingspeed.setFont(Font.font("Verdana", FontWeight.BOLD, 16));
 	}
 	
 	public void setStatsRects() {
