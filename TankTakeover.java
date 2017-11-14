@@ -8,6 +8,7 @@ import javafx.scene.input.*;
 import javafx.scene.text.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
+import javafx.scene.Cursor;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -15,11 +16,10 @@ import java.util.*;
 //Importing my stuff
 
 public class TankTakeover extends Application {
-	
  public static void main(String[] args) {
 	Application.launch(args); //Launches application
  }
- 
+	
 	public static int STAGE_WIDTH = 1000;
 	public static int STAGE_HEIGHT = 600;
 	public static int DISTANCE_FROM_BORDER_X = 100;
@@ -33,9 +33,12 @@ public class TankTakeover extends Application {
 	public static int TB_ELIMINATED = -2;
 	public static int CORNER_ARC = 20;
 	
-	int i, j, k, levelselection, demoangle = 0;
+	int i, j, k, levelselection;
 	int demotankselection = -1;
-	boolean inthelevel, inhelp = false;
+	double mousex, mousey;
+	boolean inthelevel, inhelp, mouseonscreen;
+	boolean sprayerboundaryvisible = true;
+	boolean guardboundaryvisible = true;
 	
 	DroneTank tankdemos[] = new DroneTank[NUM_OF_DRONES];
 	PlayerTank tankplayers[] = new PlayerTank[NUM_OF_PLAYERS];
@@ -54,6 +57,7 @@ public class TankTakeover extends Application {
 	ImageView startbutton = new ImageView(new Image("Start_Button.png"));
 	ImageView helpbutton = new ImageView(new Image("Help_Button.png"));
 	ImageView backbutton = new ImageView(new Image("Back_Button.png"));
+	ImageView deathicon = new ImageView(new Image("Death_Icon.png"));
 	
 	Rectangle selectionbox = new Rectangle(STAGE_WIDTH + 10, 17, 170, 136);
 	Rectangle namebase = new Rectangle(0, 25, 0, 34);
@@ -67,9 +71,12 @@ public class TankTakeover extends Application {
 	Text healthtext = new Text(808, 200, "Health:");
 	Text damagetext = new Text(792, 250, "Damage:");
 	Text firingspeedtext = new Text(760, 300, "Firing speed:");
+	Text victorytext = new Text(170, 250, "Player ");
 	
 	Color lightgray = Color.rgb(195, 195, 195);
- 
+	
+	AnimationTimer timer = null;
+	
 	public void start(Stage primaryStage) throws Exception {
 		startbutton.setLayoutX(230);
 		startbutton.setLayoutY(443);
@@ -78,6 +85,7 @@ public class TankTakeover extends Application {
 		backbutton.setLayoutX(880);
 		backbutton.setLayoutY(539);
 		backbutton.setVisible(false);
+		deathicon.setVisible(false);
 		
 		selectionbox.setStroke(Color.GREEN);
 		selectionbox.setFill(Color.TRANSPARENT);
@@ -124,9 +132,15 @@ public class TankTakeover extends Application {
 		firingspeedtext.setFont(Font.font("Verdana", 16));
 		firingspeedtext.setVisible(false);
 		
+		victorytext.setFont(Font.font("Verdana", FontWeight.BOLD, 80));
+		victorytext.setStroke(Color.BLACK);
+		victorytext.setStrokeWidth(5);
+		victorytext.setVisible(false);
+		
 		primaryStage.setTitle("Tank Takeover");
-		Group root = new Group(startbutton, helpbutton, backbutton, selectionbox, namebase, descriptionbase, statsbase, redcrossA, redcrossB, nolevelselection, healthtext, damagetext, firingspeedtext);
+		Group root = new Group(startbutton, helpbutton, backbutton, deathicon, selectionbox, namebase, descriptionbase, statsbase, redcrossA, redcrossB, nolevelselection, healthtext, damagetext, firingspeedtext, victorytext);
 		Scene scene = new Scene(root, STAGE_WIDTH, STAGE_HEIGHT);
+		scene.setCursor(Cursor.CROSSHAIR);
 		
 		for (i = 0; i < NUM_OF_DRONES; i++) {
 			icons[i] = new Image("Class_" + i + "_Icon.png");
@@ -173,13 +187,9 @@ public class TankTakeover extends Application {
 		
 		for (i = 0; i < NUM_OF_PLAYERS; i++) {
 			tankplayers[i] = new PlayerTank(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, false, false, new Circle(), new Line(), new Line(), new Line(), new Line(), new Text());
-		}
-		
-		i = 0;
-		for (PlayerTank tankplayer : tankplayers) {
-			tankplayer.create(i++);
-			tankplayer.setPlayerClass(0);
-			tankplayer.setClassAttributes();
+			tankplayers[i].create(i);
+			tankplayers[i].setPlayerClass(0);
+			tankplayers[i].setClassAttributes();
 		}
 		
 		byte inbuf[] = new byte[20500];
@@ -202,15 +212,16 @@ public class TankTakeover extends Application {
 				health = linedescriptions[i * 6 + 3].substring(0, linedescriptions[i * 6 + 3].length()).trim();
 				damage = linedescriptions[i * 6 + 4].substring(0, linedescriptions[i * 6 + 4].length()).trim();
 				firingspeed = linedescriptions[i * 6 + 5].substring(0, linedescriptions[i * 6 + 5].length()).trim();
-				
 				alldescriptions[i] = new TankDescriptions(new Text(name), new Text(descriptionline1), new Text(descriptionline2), new Text(health), new Text(damage), new Text(firingspeed), new Rectangle(), new Rectangle(), new Rectangle());
-				alldescriptions[i].create();
-				alldescriptions[i].setDescriptionFont();
-				alldescriptions[i].setStatsRects();
-				alldescriptions[i].setDescriptionVisible(false);
-				alldescriptions[i].name.setLayoutX(-(alldescriptions[i].name.getBoundsInLocal().getWidth() / 2));
-				TankDescriptions tempdesc = alldescriptions[i];
-				root.getChildren().addAll(tempdesc.name, tempdesc.descriptionline1, tempdesc.descriptionline2, tempdesc.health, tempdesc.damage, tempdesc.firingspeed, tempdesc.healthrect, tempdesc.damagerect, tempdesc.firingspeedrect);
+			}
+			
+			for (TankDescriptions singledesc : alldescriptions) {
+				singledesc.create();
+				singledesc.setDescriptionFont();
+				singledesc.setStatsRects();
+				singledesc.setDescriptionVisible(false);
+				singledesc.name.setLayoutX(-(singledesc.name.getLayoutBounds().getWidth() / 2));
+				root.getChildren().addAll(singledesc.name, singledesc.descriptionline1, singledesc.descriptionline2, singledesc.health, singledesc.damage, singledesc.firingspeed, singledesc.healthrect, singledesc.damagerect, singledesc.firingspeedrect);
 			}
 			
 		} catch (IOException exc) {
@@ -218,21 +229,15 @@ public class TankTakeover extends Application {
 			return;
 		}
 		
-		for (PlayerTank tankplayer : tankplayers) {
-			root.getChildren().addAll(tankplayer.base, tankplayer.barrel, tankplayer.healthdisplay, tankplayer.sightline, tankplayer.sightlinereflect, tankplayer.sightlinereflect2);
-		}
+		for (PlayerTank tankplayer : tankplayers) root.getChildren().addAll(tankplayer.base, tankplayer.barrel, tankplayer.healthdisplay, tankplayer.sightline, tankplayer.sightlinereflect, tankplayer.sightlinereflect2);
 		
 		for (i = 0; i < 5; i++) {
-			tankdemos[i] = new DroneTank(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, false, new Circle(), new Circle(), new Line(), new Rectangle(), new Rectangle(), new Rectangle(), new ImageView());
-		}
-		
-		i = 0;
-		for (DroneTank tankdemo : tankdemos) {
-			tankdemo.create(5, 3);
-			tankdemo.setDroneClass(i++);
-			tankdemo.setClassAttributes(icons[tankdemo.clazz]);
-			tankdemo.setDroneVisible(false);
-			root.getChildren().addAll(tankdemo.base, tankdemo.barrel, tankdemo.icon);
+			tankdemos[i] = new DroneTank(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, true, false, new Circle(), new Circle(), new Circle(), new Line(), new Rectangle(), new Rectangle(), new Rectangle(), new ImageView());
+			tankdemos[i].create(5, 3);
+			tankdemos[i].setDroneClass(i);
+			tankdemos[i].setClassAttributes(icons[tankdemos[i].clazz]);
+			tankdemos[i].setDroneVisible(false);
+			root.getChildren().addAll(tankdemos[i].base, tankdemos[i].barrel, tankdemos[i].icon);
 		}
 		
 		startbutton.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
@@ -247,6 +252,7 @@ public class TankTakeover extends Application {
 					selectionbox.setVisible(false);
 					
 					for (PlayerTank tankplayer : tankplayers) {
+						tankplayer.setClassAttributes();
 						tankplayer.setPlayerVisible(true);
 					}
 					
@@ -255,10 +261,7 @@ public class TankTakeover extends Application {
 						allprojectiles.remove(i);
 					}
 					
-					for (ImageView levelpicture : levelpictures) {
-						levelpicture.setVisible(false);
-					}
-					
+					for (ImageView levelpicture : levelpictures) levelpicture.setVisible(false);
 					byte inbuf[] = new byte[20500];
 					
 					try (DataInputStream dataIn = new DataInputStream(new FileInputStream("StageDronePlacement.txt"))) {
@@ -273,7 +276,7 @@ public class TankTakeover extends Application {
 								str = str.substring(1, str.length()).trim();
 							}
 							
-						} //while
+						}
 						
 					} catch (IOException exc) {
 						System.out.println("Read error.");
@@ -283,7 +286,7 @@ public class TankTakeover extends Application {
 					for (i = 0; i < 11; i++) {
 						
 						for (j = 0; j < 7; j++) {
-							tankdrones[i][j] = new DroneTank(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, new Circle(), new Circle(), new Line(), new Rectangle(), new Rectangle(), new Rectangle(), new ImageView());
+							tankdrones[i][j] = new DroneTank(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, new Circle(), new Circle(), new Circle(), new Line(), new Rectangle(), new Rectangle(), new Rectangle(), new ImageView());
 							tankdrones[i][j].create(i, j);
 							
 							if (levelschematics[i][j].equals("-")) tankdrones[i][j] = null;
@@ -293,21 +296,19 @@ public class TankTakeover extends Application {
 								tankdrones[i][j].setDroneVisible(true);
 								root.getChildren().addAll(tankdrones[i][j].base, tankdrones[i][j].ownerflag, tankdrones[i][j].barrel, tankdrones[i][j].healthbase, tankdrones[i][j].bluehealthbar, tankdrones[i][j].redhealthbar, tankdrones[i][j].icon);
 								
-								if (tankdrones[i][j].clazz == 4) {
-									DroneTank tempdrone = tankdrones[i][j];
-									Circle boundary = new Circle(tempdrone.getTrueX(), tempdrone.getTrueY(), tempdrone.bulletrange);
-									boundary.setStroke(Color.BLACK);
-									boundary.setFill(Color.TRANSPARENT);
-									root.getChildren().add(boundary);
-									boundary.toBack();
+								if ((tankdrones[i][j].clazz == 2 && sprayerboundaryvisible) || (tankdrones[i][j].clazz == 4 && guardboundaryvisible)) {
+									tankdrones[i][j].rangeboundary.setRadius(tankdrones[i][j].bulletrange);
+									tankdrones[i][j].rangeboundary.setVisible(true);
+									root.getChildren().add(tankdrones[i][j].rangeboundary);
 								}
 								
 							}
-						
+							
 						}
 						
 					}
 					
+					scene.setCursor(Cursor.NONE);
 				} else {
 					redcrossA.setVisible(true);
 					redcrossB.setVisible(true);
@@ -330,10 +331,7 @@ public class TankTakeover extends Application {
 				redcrossB.setVisible(false);
 				nolevelselection.setVisible(false);
 				backbutton.setVisible(true);
-				
-				for (PlayerTank tankplayer : tankplayers) {
-					tankplayer.setPlayerVisible(false);
-				}
+				for (PlayerTank tankplayer : tankplayers) tankplayer.setPlayerVisible(false);
 				
 				for (i = allprojectiles.size() - 1; i >= 0; i--) {
 					root.getChildren().remove(allprojectiles.get(i).body);
@@ -361,8 +359,8 @@ public class TankTakeover extends Application {
 								healthtext.setVisible(true);
 								damagetext.setVisible(true);
 								firingspeedtext.setVisible(true);
-								namebase.setX(500 - (alldescriptions[index].name.getBoundsInLocal().getWidth() / 2) - 10);
-								namebase.setWidth(alldescriptions[index].name.getBoundsInLocal().getWidth() + 20);
+								namebase.setX(500 - (alldescriptions[index].name.getLayoutBounds().getWidth() / 2) - 10);
+								namebase.setWidth(alldescriptions[index].name.getLayoutBounds().getWidth() + 20);
 							}
 							
 						}
@@ -371,45 +369,73 @@ public class TankTakeover extends Application {
 					
 				}
 				
-				backbutton.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-					@Override
+			}
+			
+		});
+		
+		backbutton.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+			@Override
+			
+			public void handle(MouseEvent event) {
+				
+				if (inhelp) {
+					inhelp = false;
+					backbutton.setVisible(false);
+					namebase.setVisible(false);
+					descriptionbase.setVisible(false);
+					statsbase.setVisible(false);
+					healthtext.setVisible(false);
+					damagetext.setVisible(false);
+					firingspeedtext.setVisible(false);
+					startbutton.setVisible(true);
+					helpbutton.setVisible(true);
+					selectionbox.setVisible(true);
+					for (PlayerTank tankplayer : tankplayers) tankplayer.setPlayerVisible(true);
 					
-					public void handle(MouseEvent event) {
-						inhelp = false;
-						backbutton.setVisible(false);
-						namebase.setVisible(false);
-						descriptionbase.setVisible(false);
-						statsbase.setVisible(false);
-						healthtext.setVisible(false);
-						damagetext.setVisible(false);
-						firingspeedtext.setVisible(false);
-						startbutton.setVisible(true);
-						helpbutton.setVisible(true);
-						selectionbox.setVisible(true);
-						
-						for (PlayerTank tankplayer : tankplayers) {
-							tankplayer.setPlayerVisible(true);
-						}
-						
-						for (i = 0; i < NUM_OF_DRONES; i++) {
-							demopictures[i].setVisible(false);
-							demobackgrounds[i].setVisible(false);
-							tankdemos[i].setDroneVisible(false);
-							alldescriptions[i].setDescriptionVisible(false);
-							levelpictures[i].setVisible(true);
-						}
-						
-						for (i = allprojectiles.size() - 1; i >= 0; i--) {
-							root.getChildren().remove(allprojectiles.get(i).body);
-							allprojectiles.remove(i);
-						}
-						
-						demotankselection = -1;
-						allprojectiles.clear();
-						event.consume();
+					for (i = 0; i < NUM_OF_DRONES; i++) {
+						demopictures[i].setVisible(false);
+						demobackgrounds[i].setVisible(false);
+						tankdemos[i].setDroneVisible(false);
+						alldescriptions[i].setDescriptionVisible(false);
+						levelpictures[i].setVisible(true);
 					}
 					
-				});
+					for (i = allprojectiles.size() - 1; i >= 0; i--) {
+						root.getChildren().remove(allprojectiles.get(i).body);
+						allprojectiles.remove(i);
+					}
+					
+					demotankselection = -1;
+					allprojectiles.clear();
+				} else if (inthelevel) {
+					inthelevel = false;
+					backbutton.setVisible(false);
+					deathicon.setVisible(false);
+					victorytext.setVisible(false);
+					startbutton.setVisible(true);
+					helpbutton.setVisible(true);
+					selectionbox.setVisible(true);
+					for (i = 0; i < NUM_OF_PLAYERS; i++) tankplayers[i].reset(i);
+					for (TankProjectile singlebullet : allprojectiles) root.getChildren().remove(singlebullet.body);
+					for (ImageView levelpicture : levelpictures) levelpicture.setVisible(true);
+					
+					for (DroneTank[] tankdronerow : tankdrones) {
+					for (DroneTank tankdrone : tankdronerow) {
+						
+						if (tankdrone != null) {
+							root.getChildren().removeAll(tankdrone.base, tankdrone.ownerflag, tankdrone.rangeboundary, tankdrone.barrel, tankdrone.healthbase, tankdrone.bluehealthbar, tankdrone.redhealthbar, tankdrone.icon);
+						}
+						
+						tankdrone = null;
+					}
+					}
+					
+					victorytext.setText("Player ");
+					levelselection = 0;
+					selectionbox.setX(STAGE_WIDTH + 10);
+					allprojectiles.clear();
+					timer.start();
+				}
 				
 			}
 			
@@ -475,11 +501,9 @@ public class TankTakeover extends Application {
 							if (tankplayers[0].megamind) {
 								
 								for (DroneTank[] tankdronerow : tankdrones) {
-									
-									for (DroneTank tankdrone : tankdronerow) {
-										if (tankdrone != null && tankdrone.owner == 0 && tankdrone.clazz != 4) tankdrone.resetTargeting();
-									}
-									
+								for (DroneTank tankdrone : tankdronerow) {
+									if (tankdrone != null && tankdrone.owner == 0 && tankdrone.clazz != 4) tankdrone.resetTargeting();
+								}
 								}
 								
 							}
@@ -499,11 +523,9 @@ public class TankTakeover extends Application {
 							if (tankplayers[1].megamind) {
 								
 								for (DroneTank[] tankdronerow : tankdrones) {
-									
-									for (DroneTank tankdrone : tankdronerow) {
-										if (tankdrone != null && tankdrone.owner == 1 && tankdrone.clazz != 4) tankdrone.resetTargeting();
-									}
-									
+								for (DroneTank tankdrone : tankdronerow) {
+									if (tankdrone != null && tankdrone.owner == 1 && tankdrone.clazz != 4) tankdrone.resetTargeting();
+								}
 								}
 								
 							}
@@ -540,13 +562,37 @@ public class TankTakeover extends Application {
 			
 		});
 		
-		AnimationTimer timer = new AnimationTimer() {
-            @Override
+		scene.setOnMouseMoved(new EventHandler<MouseEvent>() {
+			@Override
 			
-            public void handle(long now) {
+			public void handle(MouseEvent event) {
+				
+				if (inhelp) {
+					mouseonscreen = true;
+					mousex = event.getX();
+					mousey = event.getY();
+				}
+				
+			}
+			
+		});
+		
+		scene.setOnMouseExited(new EventHandler<MouseEvent>() {
+			@Override
+			
+			public void handle(MouseEvent event) {
+				if (inhelp) mouseonscreen = false;
+			}
+			
+		});
+		
+		timer = new AnimationTimer() {
+			@Override
+			
+			public void handle(long now) {
 				
 				if (inthelevel) {
-				
+					
 					//Player tank logic
 					for (PlayerTank tankplayer : tankplayers) {
 						tankplayer.moveLR(); //takes keyboard inputs to turn the players
@@ -556,26 +602,18 @@ public class TankTakeover extends Application {
 						
 						if (tankplayer.currenthealth <= 0) {
 							tankplayer.healthdisplay.setVisible(false);
-							
-							for (DroneTank[] tankdronerow : tankdrones) {
-								
-								for (DroneTank tankdrone : tankdronerow) {
-									
-									if (tankdrone != null && tankdrone.clazz != 4) {
-									
-										if (tankdrone.owner == tankplayer.team) tankdrone.toNeutral();
-										else {
-											tankdrone.activetarget = tankplayer.team == 0 ? 3 : 73;
-											tankdrone.turnToTarget(tankplayer.centerx, tankplayer.centery);
-											tankdrone.updateBarrel();
-										}
-										
-									}
-									
-								}
-								
-							}
-							
+							deathicon.setVisible(true);
+							deathicon.relocate(tankplayer.getTrueX() - 11, tankplayer.getTrueY() - 11);
+							deathicon.toFront();
+							victorytext.setVisible(true);
+							victorytext.setText(victorytext.getText() + (tankplayer.team == 0 ? "2" : "1") + " Wins!");
+							victorytext.setFill(tankplayer.team == 0 ? Color.RED : Color.BLUE);
+							victorytext.setX((STAGE_WIDTH - victorytext.getLayoutBounds().getWidth()) / 2);
+							victorytext.toFront();
+							backbutton.setVisible(true);
+							backbutton.toFront();
+							scene.setCursor(Cursor.CROSSHAIR);
+							timer.stop();
 						}
 						
 						/* Shooting bullets logic
@@ -592,8 +630,8 @@ public class TankTakeover extends Application {
 							* The variable is then reset to the max reload timer
 						 */
 						if (tankplayer.fireBullet()) {
-							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
-							allprojectiles.get(allprojectiles.size() - 1).create(tankplayer.team, tankplayer.getTrueX(), tankplayer.getTrueY(), tankplayer.getBarrelLength(), tankplayer.angle, tankplayer.bulletspeed, tankplayer.bulletsize, tankplayer.damage, tankplayer.bulletpenetration, 99999, tankplayer.ricochet);
+							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
+							allprojectiles.get(allprojectiles.size() - 1).create(tankplayer.team, tankplayer.getTrueX(), tankplayer.getTrueY(), tankplayer.team == 0 ? 3 : 73, tankplayer.getBarrelLength(), tankplayer.angle, tankplayer.bulletspeed, tankplayer.bulletsize, tankplayer.damage, tankplayer.bulletpenetration, 99999, tankplayer.ricochet);
 							root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
 							tankplayer.moveToFront();
 						}
@@ -602,85 +640,103 @@ public class TankTakeover extends Application {
 					
 					//Drone tank logic
 					for (DroneTank[] tankdronerow : tankdrones) {
-					
-						for (DroneTank tankdrone : tankdronerow) {
+					for (DroneTank tankdrone : tankdronerow) {
+						
+						if (tankdrone != null) {
+							tankdrone.updateHealthDisplay(); //updates the graphical health bar display
+							tankdrone.displayHealthBar(); //displays the health bar if the tank was damaged 60 frames ago
 							
-							if (tankdrone != null) {
-								tankdrone.updateHealthDisplay(); //updates the graphical health bar display
-								tankdrone.displayHealthBar(); //displays the health bar if the tank was damaged 60 frames ago
+							/* Targeting enemy/neutral drone logic
+							 * For the tanks that aren't guards or neutral:
+								* If the tank is not currently locked onto a target and shooting:
+									* If the tank hasn't found a new target, then it will run a method to determine the closest tank it should target
+									* Otherwise, the tank will use the coordinates of its targeted tank (represented by the parameter "activetarget") to change its angle until it's facing its target
+									* The tank will only target the enemy player once all other tanks have been converted, and special parameters associated with the coordinates of the player tanks are passed if the attacking tank is targeting the enemy player
+									* After all this targeting logic, the barrel is graphically updated to follow its angle
+								* If the tank is a guard and not locked onto a target and shooting:
+									* If the guard hasn't found a new bullet to gun down, it will run a method to determine the closest bullet that is within the 200 pixel range and is from the enemy team
+									* The logic for guards differs in that its angle used to attack an enemy bullet is updated every time it attacks
+								* If the tank is neutral and currently holds an active target:
+									* The tank will set its attacking parameters to default if its active target is currently neutral
+									* 
+								* Finally, if the tank can release a bullet, a bullet will be added to allprojectiles that inherits the properties of:
+									* angle
+									* size
+									* penetration
+									* damage
+									* origin point
+									* team that it's on
+							 */
+							if (tankdrone.clazz != 4 && tankdrone.owner != -1) {
+								//not guard and not neutral
 								
-								/* Targeting enemy/neutral drone logic
-								 * For the tanks that aren't guards or neutral:
-									* If the tank is not currently locked onto a target and shooting:
-										* If the tank hasn't found a new target, then it will run a method to determine the closest tank it should target
-										* Otherwise, the tank will use the coordinates of its targeted tank (represented by the parameter "activetarget") to change its angle until it's facing its target
-										* The tank will only target the enemy player once all other tanks have been converted, and special parameters associated with the coordinates of the player tanks are passed if the attacking tank is targeting the enemy player
-										* After all this targeting logic, the barrel is graphically updated to follow its angle
-									* If the tank is a guard and not locked onto a target and shooting:
-										* If the guard hasn't found a new bullet to gun down, it will run a method to determine the closest bullet that is within the 200 pixel range and is from the enemy team
-										* The logic for guards differs in that its angle used to attack an enemy bullet is updated every time it attacks
-									* Finally, if the tank can release a bullet, a bullet will be added to allprojectiles that inherits the properties of:
-										* angle
-										* size
-										* penetration
-										* damage
-										* origin point
-										* team that it's on
-								 */
-								if (tankdrone.clazz != 4) {
-								
-									if (!tankdrone.shooting && tankdrone.owner != -1) {
+								if (!tankdrone.shooting) {
+									//not locked onto a target and shooting
+									
+									if (!tankdrone.targeting) tankdrone.findNewTarget(tankdrones);
+									//finds new target if it doesn't have one
+									else {
 										
-										if (!tankdrone.targeting) tankdrone.findNewTarget(tankdrones, tankplayers);
-										else {
-											
-											if (tankdrone.activetarget != 3 && tankdrone.activetarget != 73) {
-												DroneTank tempdrone = tankdrones[tankdrone.activetarget / 7][tankdrone.activetarget % 7];
-												tankdrone.turnToTarget(tempdrone.centerx, tempdrone.centery);
-											} else {
-												int temp = tankdrone.activetarget == 3 ? 0 : 1;
-												tankdrone.turnToTarget(tankplayers[temp].centerx, tankplayers[temp].centery);
-											}
-											
-											tankdrone.updateBarrel();
+										if (tankdrone.activetarget != 3 && tankdrone.activetarget != 73) {
+											//not targeting either player
+											DroneTank tempdrone = tankdrones[tankdrone.activetarget / 7][tankdrone.activetarget % 7];
+											tankdrone.turnToTarget(tempdrone.centerx, tempdrone.centery); //turns to target if not locked onto it
+										} else {
+											PlayerTank tempplayer = tankplayers[tankdrone.activetarget == 3 ? 0 : 1];
+											tankdrone.turnToTarget(tempplayer.centerx, tempplayer.centery); //takes stats from player it's currently targeting
 										}
 										
-									}
-									
-								} else if (tankdrone.owner != -1) {
-									if (!tankdrone.targeting) tankdrone.findNewTargetGuard(allprojectiles);
-									
-									if (tankdrone.targeting) {
-										
-										if (tankdrone.activetarget < allprojectiles.size()) {
-											TankProjectile tempbullet = allprojectiles.get(tankdrone.activetarget);
-											tankdrone.turnToTargetGuard(tempbullet.centerx, tempbullet.centery, tempbullet.speed, tempbullet.angle);
-											tankdrone.updateBarrel();
-										} else tankdrone.targeting = false;
-										
+										tankdrone.updateBarrel(); //updates graphical display of barrel
 									}
 									
 								}
 								
-								if (tankdrone.fireBullet()) {
-									allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
-									allprojectiles.get(allprojectiles.size() - 1).create(tankdrone.owner, tankdrone.getTrueX(), tankdrone.getTrueY(), tankdrone.getBarrelLength(), tankdrone.angle, tankdrone.bulletspeed, tankdrone.bulletsize, tankdrone.damage, tankdrone.bulletpenetration, tankdrone.bulletrange, false);
-									root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
-									tankdrone.moveToFront();
-									if (tankdrone.clazz == 4) tankdrone.findNewTargetGuard(allprojectiles);
+							} else if (tankdrone.owner != -1) {
+								//non neutrals (only guards on teams)
+								if (!tankdrone.targeting) tankdrone.findNewTargetGuard(allprojectiles); //finds new bullet target if it doesn't have one
+								
+								if (tankdrone.targeting) {
+									
+									if (tankdrone.activetarget < allprojectiles.size()) {
+										TankProjectile tempbullet = allprojectiles.get(tankdrone.activetarget);
+										tankdrone.turnToTargetGuard(tempbullet.centerx, tempbullet.centery, tempbullet.speed, tempbullet.angle);
+										tankdrone.updateBarrel();
+									} else tankdrone.resetTargeting();
+									
 								}
 								
+							} else if (tankdrone.targeting) {
+								
+								if (tankdrones[tankdrone.activetarget / 7][tankdrone.activetarget % 7] != null && tankdrones[tankdrone.activetarget / 7][tankdrone.activetarget % 7].owner == -1) tankdrone.resetTargeting();
+								else if (tankdrone.activetarget != 3 && tankdrone.activetarget != 73) {
+									DroneTank tempdrone = tankdrones[tankdrone.activetarget / 7][tankdrone.activetarget % 7];
+									tankdrone.turnToTarget(tempdrone.centerx, tempdrone.centery);
+								} else {
+									int temp = tankdrone.activetarget == 3 ? 0 : 1;
+									tankdrone.turnToTarget(tankplayers[temp].centerx, tankplayers[temp].centery);
+								}
+								
+								tankdrone.updateBarrel();
+							}
+							
+							if (tankdrone.fireBullet()) {
+								allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
+								allprojectiles.get(allprojectiles.size() - 1).create(tankdrone.owner, tankdrone.getTrueX(), tankdrone.getTrueY(), tankdrone.getIndex(), tankdrone.getBarrelLength(), tankdrone.angle, tankdrone.bulletspeed, tankdrone.bulletsize, tankdrone.damage, tankdrone.bulletpenetration, tankdrone.bulletrange, false);
+								root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
+								tankdrone.moveToFront();
+								if (tankdrone.clazz == 4) tankdrone.findNewTargetGuard(allprojectiles);
 							}
 							
 						}
 						
 					}
+					}
 					
 					//Collision detection logic for bullets
-					for (TankProjectile singleprojectile : allprojectiles) {
-						singleprojectile.updatePosition(); //uses bullet speed and angle to determine the next location each frame
-						singleprojectile.body.toBack(); //ensures that all bullets are behind everything else
-					
+					for (TankProjectile singlebullet : allprojectiles) {
+						singlebullet.updatePosition(); //uses bullet speed and angle to determine the next location each frame
+						singlebullet.body.toBack(); //ensures that all bullets are behind everything else
+						
 						/* Checking against various attributes to determine if something needs to be done about the bullet
 						 * First, the bullet runs a method to determine if it's off the stage
 						 * If this is true, given the stage width and height:
@@ -702,72 +758,55 @@ public class TankTakeover extends Application {
 							* Some logic is run to remove both bullets from the ArrayList allprojectiles
 							* Any guards that may have been targeting the bullet have their targeting reset to find a new bullet to attack
 						 */
-						if (singleprojectile.offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
+						if (singlebullet.offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
 							
-							if (!singleprojectile.ricochet) {
-								root.getChildren().remove(singleprojectile.body);
-								singleprojectile.owner = TB_ELIMINATED;
-							} else {
-								singleprojectile.body.setVisible(true);
+							if (!singlebullet.ricochet) singlebullet.owner = TB_ELIMINATED;
+							else {
 								
-								if (singleprojectile.centerx < 0 || singleprojectile.centerx > STAGE_WIDTH) {
-									singleprojectile.angle = 360 - singleprojectile.angle; 
-								} else if (singleprojectile.centery < 0 || singleprojectile.centery > STAGE_HEIGHT) {
-									singleprojectile.angle = 180 - singleprojectile.angle; 
+								if (singlebullet.centerx < 0 || singlebullet.centerx > STAGE_WIDTH) {
+									singlebullet.angle = 360 - singlebullet.angle; 
+								} else if (singlebullet.centery < 0 || singlebullet.centery > STAGE_HEIGHT) {
+									singlebullet.angle = 180 - singlebullet.angle; 
 								}
 								
-								singleprojectile.updatePosition();
+								singlebullet.updatePosition();
 							}
 							
 						}
 						
-						if (singleprojectile.outOfRange() && singleprojectile.owner != 4) {
-							root.getChildren().remove(singleprojectile.body);
-							singleprojectile.owner = TB_ELIMINATED;
-						}
+						if (singlebullet.outOfRange() && singlebullet.owner != 4) singlebullet.owner = TB_ELIMINATED;
 						
-						for (j = 0; j < 77 && singleprojectile.owner != TB_ELIMINATED; j++) {
+						for (DroneTank[] tankdronerow : tankdrones) {
+						for (DroneTank tankdrone : tankdronerow) {
 							
-							if (tankdrones[j / 7][j % 7] != null && singleprojectile.intersectsNonGuard(tankdrones[j / 7][j % 7].base, tankdrones[j / 7][j % 7].owner)) {
-								tankdrones[j / 7][j % 7].removeHealth(singleprojectile.damage, singleprojectile.owner);
-								tankdrones[j / 7][j % 7].healthBelowZeroActivites(singleprojectile.owner, tankdrones, j);
-								root.getChildren().remove(singleprojectile.body);
-								singleprojectile.owner = TB_ELIMINATED;
+							if (tankdrone != null && singlebullet.intersectsNonGuard(tankdrone.base, tankdrone.owner)) {
+								tankdrone.removeHealth(singlebullet.damage, singlebullet.owner);
+								tankdrone.healthBelowZeroActivites(singlebullet.owner, tankdrones, tankdrone.getIndex(), singlebullet.origindrone);
+								singlebullet.owner = TB_ELIMINATED;
 							}
 							
+						}
 						}
 						
 						for (PlayerTank tankplayer : tankplayers) {
 							
-							if (singleprojectile.intersectsNonGuard(tankplayer.base, tankplayer.team)) {
-								tankplayer.currenthealth -= singleprojectile.damage;
-								root.getChildren().remove(singleprojectile.body);
-								singleprojectile.owner = TB_ELIMINATED;	
+							if (singlebullet.intersectsNonGuard(tankplayer.base, tankplayer.team)) {
+								tankplayer.currenthealth -= singlebullet.damage;
+								singlebullet.owner = TB_ELIMINATED;
 							}
 							
 						}
 						
-						for (TankProjectile singleprojectile2 : allprojectiles) {
+						for (TankProjectile singlebullet2 : allprojectiles) {
 							
-							if (singleprojectile2.owner != singleprojectile.owner && singleprojectile2.owner != TB_ELIMINATED) {
+							if (singlebullet2.owner != singlebullet.owner && singlebullet2.owner != TB_ELIMINATED) {
 								
-								if (singleprojectile.body.getBoundsInLocal().intersects(singleprojectile2.body.getBoundsInLocal())) {
-									int temppenetration = singleprojectile2.penetration;
-									singleprojectile2.penetration -= singleprojectile.penetration;
-									singleprojectile.penetration -= temppenetration;
-									
-									if (singleprojectile.penetration <= 0) {
-										singleprojectile.body.setVisible(false);
-										root.getChildren().remove(singleprojectile.body);
-										singleprojectile.owner = TB_ELIMINATED;
-									}
-									
-									if (singleprojectile2.penetration <= 0) {
-										singleprojectile2.body.setVisible(false);
-										root.getChildren().remove(singleprojectile2.body);
-										singleprojectile2.owner = TB_ELIMINATED;
-									}
-									
+								if (singlebullet.body.getBoundsInLocal().intersects(singlebullet2.body.getBoundsInLocal())) {
+									int temppenetration = singlebullet2.penetration;
+									singlebullet2.penetration -= singlebullet.penetration;
+									singlebullet.penetration -= temppenetration;
+									if (singlebullet.penetration <= 0) singlebullet.owner = TB_ELIMINATED;
+									if (singlebullet2.penetration <= 0) singlebullet2.owner = TB_ELIMINATED;
 								}
 								
 							}
@@ -777,19 +816,25 @@ public class TankTakeover extends Application {
 					}
 					
 					for (i = allprojectiles.size() - 1; i >= 0; i--) {
-						if (allprojectiles.get(i).owner == TB_ELIMINATED) allprojectiles.remove(i);
+						
+						if (allprojectiles.get(i).owner == TB_ELIMINATED) {
+							root.getChildren().remove(allprojectiles.get(i).body);
+							allprojectiles.remove(i);
+						}
+						
 					}
 					
 				} else if (inhelp) {
-					demoangle = (demoangle + 1) % 360;
 					
 					for (DroneTank tankdemo : tankdemos) {
-						tankdemo.angle = demoangle;
+						if (mouseonscreen) tankdemo.turnToTarget((mousex - 100) / 80, (mousey - 60) / 80);
+						else tankdemo.angle = (tankdemo.angle + 1) % 360;
+						tankdemo.shooting = true;
 						tankdemo.updateBarrel();
 						
 						if (tankdemo.fireBullet() && tankdemo.clazz == demotankselection) {
-							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
-							allprojectiles.get(allprojectiles.size() - 1).create(tankdemo.owner, tankdemo.getTrueX(), tankdemo.getTrueY(), tankdemo.getBarrelLength(), tankdemo.angle, tankdemo.bulletspeed, tankdemo.bulletsize, tankdemo.damage, tankdemo.bulletpenetration, tankdemo.bulletrange, false);
+							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
+							allprojectiles.get(allprojectiles.size() - 1).create(tankdemo.owner, tankdemo.getTrueX(), tankdemo.getTrueY(), tankdemo.getIndex(), tankdemo.getBarrelLength(), tankdemo.angle, tankdemo.bulletspeed, tankdemo.bulletsize, tankdemo.damage, tankdemo.bulletpenetration, tankdemo.bulletrange, false);
 							root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
 							tankdemo.moveToFront();
 						}
@@ -804,7 +849,7 @@ public class TankTakeover extends Application {
 							root.getChildren().remove(allprojectiles.get(i).body);
 							allprojectiles.remove(i);
 						}
-					
+						
 					}
 					
 				} else {
@@ -818,33 +863,50 @@ public class TankTakeover extends Application {
 						tankplayer.sightlinereflect2.setVisible(false);
 						
 						if (tankplayer.fireBullet()) {
-							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
-							allprojectiles.get(allprojectiles.size() - 1).create(tankplayer.team, tankplayer.getTrueX(), tankplayer.getTrueY(), tankplayer.getBarrelLength(), tankplayer.angle, tankplayer.bulletspeed, tankplayer.bulletsize, tankplayer.damage, tankplayer.bulletpenetration, 99999, tankplayer.ricochet);
+							allprojectiles.add(new TankProjectile(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, new Circle()));
+							allprojectiles.get(allprojectiles.size() - 1).create(tankplayer.team, tankplayer.getTrueX(), tankplayer.getTrueY(), tankplayer.team == 0 ? 3 : 73, tankplayer.getBarrelLength(), tankplayer.angle, tankplayer.bulletspeed, tankplayer.bulletsize, tankplayer.damage, tankplayer.bulletpenetration, 99999, tankplayer.ricochet);
 							root.getChildren().add(allprojectiles.get(allprojectiles.size() - 1).body);
 							tankplayer.moveToFront();
 						}
 						
 					}
 					
-					for (TankProjectile singleprojectile : allprojectiles) {
-						singleprojectile.updatePosition(); //uses bullet speed and angle to determine the next location each frame
-						singleprojectile.body.toBack(); //ensures that all bullets are behind everything else
-					
-						if (singleprojectile.offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
+					for (TankProjectile singlebullet : allprojectiles) {
+						singlebullet.updatePosition(); //uses bullet speed and angle to determine the next location each frame
+						singlebullet.body.toBack(); //ensures that all bullets are behind everything else
+						
+						if (singlebullet.offStage(STAGE_WIDTH, STAGE_HEIGHT)) {
 							
-							if (!singleprojectile.ricochet) {
-								root.getChildren().remove(singleprojectile.body);
-								singleprojectile.owner = TB_ELIMINATED;
-							} else {
-								singleprojectile.body.setVisible(true);
+							if (!singlebullet.ricochet) singlebullet.owner = TB_ELIMINATED;
+							else {
+								if (singlebullet.centerx < 0 || singlebullet.centerx > STAGE_WIDTH) singlebullet.angle = 360 - singlebullet.angle;
+								else if (singlebullet.centery < 0 || singlebullet.centery > STAGE_HEIGHT) singlebullet.angle = 180 - singlebullet.angle; 
+								singlebullet.updatePosition();
+							}
+							
+						}
+						
+						for (PlayerTank tankplayer : tankplayers) {
+							
+							if (singlebullet.intersectsNonGuard(tankplayer.base, tankplayer.team)) {
+								tankplayer.currenthealth -= singlebullet.damage;
+								singlebullet.owner = TB_ELIMINATED;
+							}
+							
+						}
+						
+						for (TankProjectile singlebullet2 : allprojectiles) {
+							
+							if (singlebullet2.owner != singlebullet.owner && singlebullet2.owner != TB_ELIMINATED) {
 								
-								if (singleprojectile.centerx < 0 || singleprojectile.centerx > STAGE_WIDTH) {
-									singleprojectile.angle = 360 - singleprojectile.angle;
-								} else if (singleprojectile.centery < 0 || singleprojectile.centery > STAGE_HEIGHT) {
-									singleprojectile.angle = 180 - singleprojectile.angle; 
+								if (singlebullet.body.getBoundsInLocal().intersects(singlebullet2.body.getBoundsInLocal())) {
+									int temppenetration = singlebullet2.penetration;
+									singlebullet2.penetration -= singlebullet.penetration;
+									singlebullet.penetration -= temppenetration;
+									if (singlebullet.penetration <= 0) singlebullet.owner = TB_ELIMINATED;
+									if (singlebullet2.penetration <= 0) singlebullet2.owner = TB_ELIMINATED;
 								}
 								
-								singleprojectile.updatePosition();
 							}
 							
 						}
@@ -852,7 +914,12 @@ public class TankTakeover extends Application {
 					}
 					
 					for (i = allprojectiles.size() - 1; i >= 0; i--) {
-						if (allprojectiles.get(i).owner == TB_ELIMINATED) allprojectiles.remove(i);
+						
+						if (allprojectiles.get(i).owner == TB_ELIMINATED) {
+							root.getChildren().remove(allprojectiles.get(i).body);
+							allprojectiles.remove(i);
+						}
+						
 					}
 					
 				}
@@ -865,5 +932,5 @@ public class TankTakeover extends Application {
 		primaryStage.setScene(scene);
 		primaryStage.show();
 	}
- 
+	
 }

@@ -8,12 +8,12 @@ import java.util.*;
 public class DroneTank {
 	int clazz, owner, centerx, centery, angle, maxreload, currentreload, damage, maxhealth, currenthealth, bulletspeed, bulletsize, bulletpenetration, bulletrange, activetarget, lastdamaged;
 	boolean underattack, shooting, targeting;
-	Circle base, ownerflag;
+	Circle base, ownerflag, rangeboundary;
 	Line barrel;
 	Rectangle healthbase, bluehealthbar, redhealthbar;
 	ImageView icon;
 	
-	DroneTank(int clazz, int owner, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int maxhealth, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, int bulletrange, int activetarget, int lastdamaged, boolean underattack, boolean shooting, boolean targeting, Circle base, Circle ownerflag, Line barrel, Rectangle healthbase, Rectangle bluehealthbar, Rectangle redhealthbar, ImageView icon) {
+	DroneTank(int clazz, int owner, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int maxhealth, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, int bulletrange, int activetarget, int lastdamaged, boolean underattack, boolean shooting, boolean targeting, Circle base, Circle ownerflag, Circle rangeboundary, Line barrel, Rectangle healthbase, Rectangle bluehealthbar, Rectangle redhealthbar, ImageView icon) {
 		this.clazz = clazz;
 		this.owner = owner;
 		this.centerx = centerx;
@@ -35,6 +35,7 @@ public class DroneTank {
 		this.targeting = targeting;
 		this.base = base;
 		this.ownerflag = ownerflag;
+		this.rangeboundary = rangeboundary;
 		this.barrel = barrel;
 		this.healthbase = healthbase;
 		this.bluehealthbar = bluehealthbar;
@@ -52,6 +53,10 @@ public class DroneTank {
 		ownerflag.setCenterX(getTrueX());
 		ownerflag.setCenterY(getTrueY());
 		ownerflag.setFill(Color.GRAY);
+		rangeboundary.setCenterX(getTrueX());
+		rangeboundary.setCenterY(getTrueY());
+		rangeboundary.setStroke(Color.BLACK);
+		rangeboundary.setFill(Color.TRANSPARENT);
 		barrel.setStartX(getTrueX());
 		barrel.setStartY(getTrueY());
 		barrel.setEndX(getTrueX());
@@ -172,11 +177,15 @@ public class DroneTank {
 	}
 	
 	public int getTrueX() {
-		return 100 + (centerx * 80);
+		return centerx * 80 + 100;
 	}
 	
 	public int getTrueY() {
-		return 60 + (centery * 80);
+		return centery * 80 + 60;
+	}
+	
+	public int getIndex() {
+		return centerx * 7 + centery;
 	}
 	
 	public void updateBarrel() {
@@ -201,10 +210,10 @@ public class DroneTank {
 	
 	public void toTeam(int newowner) {
 		owner = newowner;
+		targeting = shooting = false;
 		ownerflag.setFill(newowner == 0 ? Color.BLUE : Color.RED);
 		ownerflag.toFront();
 		currenthealth = maxhealth;
-		targeting = shooting = false;
 		icon.toFront();
 		healthbase.toFront();
 		bluehealthbar.toFront();
@@ -212,44 +221,42 @@ public class DroneTank {
 	}
 	
 	public void toNeutral() {
+		owner = -1;
+		targeting = shooting = false;
 		ownerflag.setFill(Color.GRAY);
 		ownerflag.toFront();
 		currenthealth *= owner == 0 ? 1 : -1;
-		owner = -1;
-		targeting = shooting = false;
 		icon.toFront();
 		healthbase.toFront();
 		bluehealthbar.toFront();
 		redhealthbar.toFront();
 	}
 	
-	public void findNewTarget(DroneTank[][] temptankdrones, PlayerTank[] temptankplayers) {
+	public void findNewTarget(DroneTank[][] temptankdrones) {
 		int closesttarget = 0;
 		double closestsquaredistance = 99999;
-		double tempdistance = 0;
 		ArrayList<Integer> possibletargets = new ArrayList<Integer>();
 		Random random = new Random();
 		
 		for (DroneTank[] temptankdronerow : temptankdrones) {
+		for (DroneTank temptankdrone : temptankdronerow) {
 			
-			for (DroneTank temptankdrone : temptankdronerow) {
-			
-				if (temptankdrone != null && owner != temptankdrone.owner) {
-					tempdistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+			if (temptankdrone != null && owner != temptankdrone.owner) {
+				double tempdistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+				int tempindex = temptankdrone.centerx * 7 + temptankdrone.centery;
 				
-					if (tempdistance < closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
-						closestsquaredistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
-						closesttarget = temptankdrone.centerx * 7 + temptankdrone.centery;
-						possibletargets.clear();
-						possibletargets.add(temptankdrone.centerx * 7 + temptankdrone.centery);
-					} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
-						possibletargets.add(temptankdrone.centerx * 7 + temptankdrone.centery);
-					}
-					
+				if (tempdistance < closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
+					closestsquaredistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+					closesttarget = tempindex;
+					possibletargets.clear();
+					possibletargets.add(tempindex);
+				} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
+					possibletargets.add(tempindex);
 				}
 				
 			}
 			
+		}
 		}
 		
 		if (closestsquaredistance == 99999 && clazz != 2) {
@@ -265,19 +272,26 @@ public class DroneTank {
 		return;
 	}
 	
-	public void turnToTarget(int tempcenterx, int tempcentery) {
+	public void turnToTarget(double tempcenterx, double tempcentery) {
 		int targetangle;
 		double temptargetangle;
 		temptargetangle = Math.atan2(tempcentery - centery, tempcenterx - centerx) + Math.PI / 2.0;
 		targetangle = (int) Math.round(Math.toDegrees(temptargetangle));
 		targetangle = Math.floorMod(targetangle, 360);
-		angle += angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
-		angle = Math.floorMod(angle, 360);
 		
-		if (angle <= targetangle + bulletspeed && angle >= targetangle - bulletspeed) {
+		if (Math.abs(Math.floorMod(targetangle - angle, 360)) <= bulletspeed) {
 			angle = targetangle;
 			shooting = true;
-		}
+		} else shooting = false;
+		
+		if (Math.abs(targetangle - angle) > 180) angle -= angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
+		else angle += angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
+		angle = Math.floorMod(angle, 360);
+		
+		if (Math.abs(Math.floorMod(targetangle - angle, 360)) <= bulletspeed) {
+			angle = targetangle;
+			shooting = true;
+		} else shooting = false;
 		
 	}
 	
@@ -299,7 +313,7 @@ public class DroneTank {
 					closesttarget = i1;
 					possibletargets.clear();
 					possibletargets.add(i1);
-				} else if (tempdistance == closestsquaredistance) possibletargets.add(i1);
+				} else if (tempdistance == closestsquaredistance && tempdistance < 200) possibletargets.add(i1);
 				
 			}
 			
@@ -309,7 +323,7 @@ public class DroneTank {
 			closesttarget = possibletargets.get(random.nextInt(possibletargets.size()));
 			activetarget = closesttarget;
 			targeting = true;
-		}
+		} else resetTargeting();
 		
 	}
 	
@@ -339,23 +353,15 @@ public class DroneTank {
 	
 	public void displayHealthBar() {
 		lastdamaged++;
-		
-		if (lastdamaged > 60) {
-			healthbase.setVisible(false);
-			bluehealthbar.setVisible(false);
-			redhealthbar.setVisible(false);
-		} else {
-			healthbase.setVisible(true);
-			bluehealthbar.setVisible(true);
-			redhealthbar.setVisible(true);
-		}
-		
+		boolean tempvisible = lastdamaged <= 60;
+		healthbase.setVisible(tempvisible);
+		bluehealthbar.setVisible(tempvisible);
+		redhealthbar.setVisible(tempvisible);
 	}
 	
 	public void removeHealth(int tempdamage, int tempowner) {
 		lastdamaged = 0;
-		if (owner == -1) currenthealth -= (tempdamage * (tempowner == 0 ? -1 : 1));
-		else currenthealth -= tempdamage;
+		currenthealth -= tempdamage * (owner == -1 ? (tempowner == 0 ? -1 : 1) : 1);
 	}
 	
 	public void resetTargeting() {
@@ -363,20 +369,22 @@ public class DroneTank {
 		shooting = false;
 	}
 	
-	public void healthBelowZeroActivites(int tempowner, DroneTank[][] temptankdrones, int j1) {
+	public void healthBelowZeroActivites(int tempowner, DroneTank[][] temptankdrones, int j1, int tempindex) {
 		
 		if (Math.abs(currenthealth) >= maxhealth && owner == -1) {
 			toTeam(tempowner);
 			
 			for (DroneTank[] temptankdronerow : temptankdrones) {
-				
-				for (DroneTank temptankdrone : temptankdronerow) {
-					if (temptankdrone != null && temptankdrone.activetarget == j1) temptankdrone.resetTargeting();
-				}
-				
+			for (DroneTank temptankdrone : temptankdronerow) {
+				if (temptankdrone != null && temptankdrone.activetarget == j1) temptankdrone.resetTargeting();
+			}
 			}
 			
 		} else if (currenthealth <= 0 && owner != -1) toNeutral();
+		else if (owner == -1 && clazz != 4 && !targeting) {
+			activetarget = tempindex;
+			targeting = true;
+		}
 		
 	}
 	

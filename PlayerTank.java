@@ -41,10 +41,6 @@ public class PlayerTank {
 		team = tempid;
 		centerx = team == 0 ? 0 : 10;
 		centery = 3;
-		bulletsize = 3;
-		bulletpenetration = 1;
-		ricochet = false;
-		megamind = false;
 		base.setCenterX(getTrueX());
 		base.setCenterY(getTrueY());
 		base.setFill(team == 0 ? Color.BLUE : Color.RED);
@@ -73,16 +69,24 @@ public class PlayerTank {
 				damage = 10;
 				currenthealth = 100;
 				bulletspeed = 5;
+				bulletsize = 3;
+				bulletpenetration = 1;
 				base.setRadius(20);
 				barrel.setStrokeWidth(6);
+				ricochet = false;
+				megamind = false;
 				break;
 			case 1:
 				maxreload = currentreload = 3;
 				damage = 1;
 				currenthealth = 120;
 				bulletspeed = 4;
+				bulletsize = 3;
+				bulletpenetration = 1;
 				base.setRadius(25);
 				barrel.setStrokeWidth(4);
+				ricochet = false;
+				megamind = false;
 				break;
 			case 2:
 				maxreload = currentreload = 90;
@@ -93,23 +97,31 @@ public class PlayerTank {
 				bulletpenetration = 3;
 				base.setRadius(15);
 				barrel.setStrokeWidth(3);
+				ricochet = false;
+				megamind = false;
 				break;
 			case 3:
 				maxreload = currentreload = 10;
 				damage = 2;
 				currenthealth = 100;
 				bulletspeed = 3;
+				bulletsize = 3;
+				bulletpenetration = 1;
 				base.setRadius(30);
 				barrel.setStrokeWidth(3);
 				ricochet = true;
+				megamind = false;
 				break;
 			case 4:
 				maxreload = currentreload = 40;
 				damage = 10;
 				currenthealth = 100;
 				bulletspeed = 5;
+				bulletsize = 3;
+				bulletpenetration = 1;
 				base.setRadius(35);
 				barrel.setStrokeWidth(5);
+				ricochet = false;
 				megamind = true;
 				break;
 		}
@@ -163,11 +175,11 @@ public class PlayerTank {
 	}
 	
 	public int getTrueX() {
-		return 100 + (centerx * 80);
+		return centerx * 80 + 100;
 	}
 	
 	public int getTrueY() {
-		return 60 + (centery * 80);
+		return centery * 80 + 60;
 	}
 	
 	public void updateBarrel() {
@@ -241,9 +253,19 @@ public class PlayerTank {
 			case 2: return 22;
 			case 3: return 34;
 			case 4: return 37;
+			default: return 25;
 		}
 		
-		return 25;
+	}
+	
+	public void reset(int tempid) {
+		create(tempid);
+		setClassAttributes();
+		angle = 0;
+		healthdisplay.setVisible(true);
+		sightline.setVisible(false);
+		sightlinereflect.setVisible(false);
+		sightlinereflect2.setVisible(false);
 	}
 	
 }
