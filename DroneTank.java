@@ -164,6 +164,7 @@ public class DroneTank {
 		bluehealthbar.setVisible(tempvisible);
 		redhealthbar.setVisible(tempvisible);
 		icon.setVisible(tempvisible);
+		rangeboundary.setVisible(tempvisible);
 	}
 	
 	public void moveToFront() {
@@ -176,17 +177,11 @@ public class DroneTank {
 		redhealthbar.toFront();
 	}
 	
-	public int getTrueX() {
-		return centerx * 80 + 100;
-	}
+	public int getTrueX() { return centerx * 80 + 100; }
 	
-	public int getTrueY() {
-		return centery * 80 + 60;
-	}
+	public int getTrueY() { return centery * 80 + 60; }
 	
-	public int getIndex() {
-		return centerx * 7 + centery;
-	}
+	public int getIndex() { return centerx * 7 + centery; }
 	
 	public void updateBarrel() {
 		barrel.setEndX(getTrueX() + getBarrelLength() * Math.sin(Math.toRadians(angle)));
@@ -250,9 +245,8 @@ public class DroneTank {
 					closesttarget = tempindex;
 					possibletargets.clear();
 					possibletargets.add(tempindex);
-				} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
+				} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2))
 					possibletargets.add(tempindex);
-				}
 				
 			}
 			
@@ -269,7 +263,6 @@ public class DroneTank {
 			targeting = true;
 		}
 		
-		return;
 	}
 	
 	public void turnToTarget(double tempcenterx, double tempcentery) {
@@ -282,16 +275,21 @@ public class DroneTank {
 		if (Math.abs(Math.floorMod(targetangle - angle, 360)) <= bulletspeed) {
 			angle = targetangle;
 			shooting = true;
-		} else shooting = false;
+		} else
+			shooting = false;
 		
-		if (Math.abs(targetangle - angle) > 180) angle -= angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
-		else angle += angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
+		if (Math.abs(targetangle - angle) > 180)
+			angle -= angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
+		else
+			angle += angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
+		
 		angle = Math.floorMod(angle, 360);
 		
 		if (Math.abs(Math.floorMod(targetangle - angle, 360)) <= bulletspeed) {
 			angle = targetangle;
 			shooting = true;
-		} else shooting = false;
+		} else
+			shooting = false;
 		
 	}
 	
@@ -308,12 +306,13 @@ public class DroneTank {
 			if (owner != tempallprojectiles.get(i1).owner && tempallprojectiles.get(i1).size != 4) {
 				tempdistance = Math.sqrt(Math.pow((double) tempallprojectiles.get(i1).centerx - getTrueX(), 2) + Math.pow((double) tempallprojectiles.get(i1).centery - getTrueY(), 2));
 				
-				if (tempdistance < closestsquaredistance && tempdistance < 200) {
+				if (tempdistance < closestsquaredistance && tempdistance < bulletrange) {
 					closestsquaredistance = tempdistance;
 					closesttarget = i1;
 					possibletargets.clear();
 					possibletargets.add(i1);
-				} else if (tempdistance == closestsquaredistance && tempdistance < 200) possibletargets.add(i1);
+				} else if (tempdistance == closestsquaredistance && tempdistance < bulletrange)
+					possibletargets.add(i1);
 				
 			}
 			
@@ -323,7 +322,8 @@ public class DroneTank {
 			closesttarget = possibletargets.get(random.nextInt(possibletargets.size()));
 			activetarget = closesttarget;
 			targeting = true;
-		} else resetTargeting();
+		} else
+			resetTargeting();
 		
 	}
 	
@@ -341,7 +341,9 @@ public class DroneTank {
 	}
 	
 	public boolean fireBullet() {
-		if (currentreload != 0) currentreload--;
+		
+		if (currentreload != 0)
+			currentreload--;
 		
 		if (shooting && currentreload == 0) {
 			currentreload = maxreload;
@@ -369,23 +371,19 @@ public class DroneTank {
 		shooting = false;
 	}
 	
-	public void healthBelowZeroActivites(int tempowner, DroneTank[][] temptankdrones, int j1, int tempindex) {
+	public boolean bulletCollision(int tempowner, int tempindex) {
 		
 		if (Math.abs(currenthealth) >= maxhealth && owner == -1) {
 			toTeam(tempowner);
-			
-			for (DroneTank[] temptankdronerow : temptankdrones) {
-			for (DroneTank temptankdrone : temptankdronerow) {
-				if (temptankdrone != null && temptankdrone.activetarget == j1) temptankdrone.resetTargeting();
-			}
-			}
-			
-		} else if (currenthealth <= 0 && owner != -1) toNeutral();
+			return true;
+		} else if (currenthealth <= 0 && owner != -1)
+			toNeutral();
 		else if (owner == -1 && clazz != 4 && !targeting) {
 			activetarget = tempindex;
 			targeting = true;
 		}
 		
+		return false;
 	}
 	
 	public int getBarrelLength() {
