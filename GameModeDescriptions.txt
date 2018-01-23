@@ -1,0 +1,20 @@
+In Decay Mode, all allied drones slowly
+lose their health over time. If their
+health drops to 0, they will return to
+neutral. However, you have one trick up
+your sleeve: Shooting your own drones
+will heal them!
+
+In Homing Mode, both players are given
+one special block that they can shoot.
+This block has a lot of health, and only
+you can make progress in taking it down,
+but upon destruction your bullets gain the
+ability to home towards the closest target!
+
+In Setup Mode, each game starts with a
+timer. While the timer remains active,
+drones will not retaliate and neither
+player can damage the other. Once the
+timer is up, each player is disabled from
+attacking. Who built the strongest army?

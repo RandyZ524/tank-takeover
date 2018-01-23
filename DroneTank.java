@@ -1,46 +1,34 @@
-import javafx.scene.text.*;
-import javafx.scene.shape.*;
-import javafx.scene.image.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Random;
 
-public class DroneTank {
-	int clazz, owner, centerx, centery, angle, maxreload, currentreload, damage, maxhealth, currenthealth, bulletspeed, bulletsize, bulletpenetration, bulletrange, activetarget, lastdamaged;
-	boolean underattack, shooting, targeting;
-	Circle base, ownerflag, rangeboundary;
-	Line barrel;
+public class DroneTank extends Tank {
+	int activetarget, lastdamaged, targetangle;
+	boolean targeting;
+	Circle ownerflag, rangeboundary;
 	Rectangle healthbase, bluehealthbar, redhealthbar;
 	ImageView icon;
 	
-	DroneTank(int clazz, int owner, int centerx, int centery, int angle, int maxreload, int currentreload, int damage, int maxhealth, int currenthealth, int bulletspeed, int bulletsize, int bulletpenetration, int bulletrange, int activetarget, int lastdamaged, boolean underattack, boolean shooting, boolean targeting, Circle base, Circle ownerflag, Circle rangeboundary, Line barrel, Rectangle healthbase, Rectangle bluehealthbar, Rectangle redhealthbar, ImageView icon) {
-		this.clazz = clazz;
-		this.owner = owner;
-		this.centerx = centerx;
-		this.centery = centery;
-		this.angle = angle;
-		this.maxreload = maxreload;
-		this.currentreload = currentreload;
-		this.damage = damage;
-		this.maxhealth = maxhealth;
-		this.currenthealth = currenthealth;
-		this.bulletspeed = bulletspeed;
-		this.bulletsize = bulletsize;
-		this.bulletpenetration = bulletpenetration;
-		this.bulletrange = bulletrange;
-		this.activetarget = activetarget;
-		this.lastdamaged = lastdamaged;
-		this.underattack = underattack;
-		this.shooting = shooting;
-		this.targeting = targeting;
-		this.base = base;
-		this.ownerflag = ownerflag;
-		this.rangeboundary = rangeboundary;
-		this.barrel = barrel;
-		this.healthbase = healthbase;
-		this.bluehealthbar = bluehealthbar;
-		this.redhealthbar = redhealthbar;
-		this.icon = icon;
+	DroneTank() {
+		super();
+		
+		this.activetarget = 0;
+		this.lastdamaged = 0;
+		this.targetangle = 0;
+		this.targeting = false;
+		this.ownerflag = new Circle();
+		this.rangeboundary = new Circle();
+		this.healthbase = new Rectangle();
+		this.bluehealthbar = new Rectangle();
+		this.redhealthbar = new Rectangle();
+		this.icon = new ImageView();
 	}
 	
 	public void create(int tempx, int tempy) {
@@ -67,12 +55,12 @@ public class DroneTank {
 		healthbase.setHeight(6);
 		bluehealthbar.setX(getTrueX() - 9);
 		bluehealthbar.setY(getTrueY() - 2);
-		bluehealthbar.setWidth(9);
+		bluehealthbar.setWidth(18);
 		bluehealthbar.setHeight(4);
 		bluehealthbar.setFill(Color.BLUE);
-		redhealthbar.setX(getTrueX());
+		redhealthbar.setX(getTrueX() - 9);
 		redhealthbar.setY(getTrueY() - 2);
-		redhealthbar.setWidth(9);
+		redhealthbar.setWidth(18);
 		redhealthbar.setHeight(4);
 		redhealthbar.setFill(Color.RED);
 	}
@@ -92,6 +80,7 @@ public class DroneTank {
 				bulletsize = 3;
 				bulletpenetration = 1;
 				bulletrange = 99999;
+				barrellength = 25;
 				base.setRadius(20);
 				barrel.setStrokeWidth(6);
 				icon.setLayoutX(getTrueX() - 10);
@@ -105,6 +94,7 @@ public class DroneTank {
 				bulletsize = 2;
 				bulletpenetration = 2;
 				bulletrange = 99999;
+				barrellength = 30;
 				base.setRadius(15);
 				barrel.setStrokeWidth(4);
 				icon.setLayoutX(getTrueX() - 8);
@@ -118,6 +108,7 @@ public class DroneTank {
 				bulletsize = 3;
 				bulletpenetration = 1;
 				bulletrange = 300;
+				barrellength = 31;
 				base.setRadius(30);
 				barrel.setStrokeWidth(9);
 				icon.setLayoutX(getTrueX() - 20);
@@ -131,6 +122,7 @@ public class DroneTank {
 				bulletsize = 20; 
 				bulletpenetration = 100;
 				bulletrange = 99999;
+				barrellength = 30;
 				base.setRadius(35);
 				barrel.setStrokeWidth(45);
 				icon.setLayoutX(getTrueX() - 25);
@@ -144,6 +136,7 @@ public class DroneTank {
 				bulletsize = 4;
 				bulletpenetration = 10;
 				bulletrange = 200;
+				barrellength = 22;
 				base.setRadius(25);
 				barrel.setStrokeWidth(12);
 				icon.setLayoutX(getTrueX() - 11);
@@ -153,7 +146,7 @@ public class DroneTank {
 		
 		icon.setImage(tempicon);
 		ownerflag.setRadius(0.8 * base.getRadius());
-		barrel.setEndY(getTrueY() - getBarrelLength());
+		barrel.setEndY(getTrueY() - barrellength);
 	}
 	
 	public void setDroneVisible(boolean tempvisible) {
@@ -177,28 +170,20 @@ public class DroneTank {
 		redhealthbar.toFront();
 	}
 	
-	public int getTrueX() { return centerx * 80 + 100; }
-	
-	public int getTrueY() { return centery * 80 + 60; }
-	
-	public int getIndex() { return centerx * 7 + centery; }
-	
-	public void updateBarrel() {
-		barrel.setEndX(getTrueX() + getBarrelLength() * Math.sin(Math.toRadians(angle)));
-		barrel.setEndY(getTrueY() - getBarrelLength() * Math.cos(Math.toRadians(angle)));
-	}
-	
 	public void updateHealthDisplay() {
 		
 		if ((currenthealth > 0 && owner == -1) || owner == 0) {
-			bluehealthbar.setWidth(9 * ((double) currenthealth / maxhealth));
-			bluehealthbar.setX(getTrueX() - bluehealthbar.getWidth());
-			bluehealthbar.toFront();
-			redhealthbar.setWidth(0);
+			bluehealthbar.setWidth(18 * ((double) currenthealth / maxhealth));
+			bluehealthbar.setVisible(true);
+			redhealthbar.setVisible(false);
 		} else if ((currenthealth < 0 && owner == -1) || owner == 1) {
-			redhealthbar.setWidth(9 * ((double) Math.abs(currenthealth) / maxhealth));
-			redhealthbar.toFront();
-			bluehealthbar.setWidth(0);
+			redhealthbar.setWidth(18 * ((double) Math.abs(currenthealth) / maxhealth));
+			redhealthbar.setX(getTrueX() + 9 - redhealthbar.getWidth());
+			redhealthbar.setVisible(true);
+			bluehealthbar.setVisible(false);
+		} else if (currenthealth == 0) {
+			bluehealthbar.setVisible(false);
+			redhealthbar.setVisible(false);
 		}
 		
 	}
@@ -215,119 +200,136 @@ public class DroneTank {
 		redhealthbar.toFront();
 	}
 	
-	public void toNeutral() {
+	public void toNeutral(int tempowner) {
 		owner = -1;
-		targeting = shooting = false;
+		resetTargeting();
 		ownerflag.setFill(Color.GRAY);
 		ownerflag.toFront();
-		currenthealth *= owner == 0 ? 1 : -1;
+		
+		if (tempowner == -1)
+			currenthealth = 0;
+		else
+			currenthealth *= owner == 0 ? 1 : -1;
+		
 		icon.toFront();
-		healthbase.toFront();
-		bluehealthbar.toFront();
-		redhealthbar.toFront();
+		updateHealthDisplay();
 	}
 	
-	public void findNewTarget(DroneTank[][] temptankdrones) {
+	public void findNewTarget(DroneTank[][] temptankdrones, PlayerTank[] temptankplayers) {
 		int closesttarget = 0;
 		double closestsquaredistance = 99999;
 		ArrayList<Integer> possibletargets = new ArrayList<Integer>();
 		Random random = new Random();
 		
-		for (DroneTank[] temptankdronerow : temptankdrones) {
-		for (DroneTank temptankdrone : temptankdronerow) {
-			
-			if (temptankdrone != null && owner != temptankdrone.owner) {
-				double tempdistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
-				int tempindex = temptankdrone.centerx * 7 + temptankdrone.centery;
+		for (DroneTank[] temptankdronerow : temptankdrones)
+			for (DroneTank temptankdrone : temptankdronerow)
 				
-				if (tempdistance < closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2)) {
-					closestsquaredistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
-					closesttarget = tempindex;
-					possibletargets.clear();
-					possibletargets.add(tempindex);
-				} else if (tempdistance == closestsquaredistance && 6400 * tempdistance < Math.pow(bulletrange, 2))
-					possibletargets.add(tempindex);
-				
-			}
-			
-		}
-		}
+				if (temptankdrone != null && owner != temptankdrone.owner) {
+					double tempdistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+					int tempindex = temptankdrone.centerx * 7 + temptankdrone.centery;
+					
+					if (Math.pow(Constants.LENGTH_OF_GRID_SQUARE, 2) * tempdistance < Math.pow(bulletrange, 2)) {
+						
+						if (tempdistance < closestsquaredistance) {
+							closestsquaredistance = Math.pow((double) temptankdrone.centerx - centerx, 2) + Math.pow((double) temptankdrone.centery - centery, 2);
+							closesttarget = tempindex;
+							possibletargets.clear();
+							possibletargets.add(tempindex);
+						} else if (tempdistance == closestsquaredistance) {
+							possibletargets.add(tempindex);
+						}
+						
+					}
+					
+				}
 		
 		if (closestsquaredistance == 99999 && clazz != 2) {
-			closesttarget = owner == 0 ? 73 : 3;
-			activetarget = closesttarget;
+			int temptarget = owner == 0 ? 1 : 0;
+			activetarget = temptankplayers[temptarget].getIndex();
 			targeting = true;
+			findTargetAngle(temptankplayers[temptarget]);
 		} else if (clazz != 2 || (clazz == 2 && closestsquaredistance != 99999)) {
-			closesttarget = possibletargets.get(random.nextInt(possibletargets.size()));
-			activetarget = closesttarget;
+			activetarget = possibletargets.get(random.nextInt(possibletargets.size()));
 			targeting = true;
+			findTargetAngle(temptankdrones[activetarget / 7][activetarget % 7]);
 		}
 		
 	}
 	
-	public void turnToTarget(double tempcenterx, double tempcentery) {
-		int targetangle;
+	public void findTargetAngle(Tank temptank) {
 		double temptargetangle;
-		temptargetangle = Math.atan2(tempcentery - centery, tempcenterx - centerx) + Math.PI / 2.0;
-		targetangle = (int) Math.round(Math.toDegrees(temptargetangle));
-		targetangle = Math.floorMod(targetangle, 360);
+		temptargetangle = Math.atan2(temptank.centery - centery, temptank.centerx - centerx) + Math.PI / 2.0;
+		targetangle = Math.floorMod((int) Math.round(Math.toDegrees(temptargetangle)), 360);
+	}
+	
+	public int findMouseTargetAngle(double mouseposx, double mouseposy) {
+		double temptargetangle;
+		temptargetangle = Math.atan2(mouseposy - getTrueY(), mouseposx - getTrueX()) + Math.PI / 2.0;
+		int targetangle = Math.floorMod((int) Math.round(Math.toDegrees(temptargetangle)), 360);
+		
+		return targetangle;
+	}
+	
+	public void turnToTarget() {
 		
 		if (Math.abs(Math.floorMod(targetangle - angle, 360)) <= bulletspeed) {
 			angle = targetangle;
 			shooting = true;
-		} else
+		} else {
 			shooting = false;
+		}
 		
-		if (Math.abs(targetangle - angle) > 180)
+		if (Math.abs(targetangle - angle) > 180) {
 			angle -= angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
-		else
+		} else {
 			angle += angle < targetangle ? bulletspeed : (angle > targetangle ? -bulletspeed : 0);
+		}
 		
 		angle = Math.floorMod(angle, 360);
 		
 		if (Math.abs(Math.floorMod(targetangle - angle, 360)) <= bulletspeed) {
 			angle = targetangle;
 			shooting = true;
-		} else
+		} else {
 			shooting = false;
+		}
 		
 	}
 	
-	public void findNewTargetGuard(ArrayList<TankProjectile> tempallprojectiles) {
+	public void findNewTargetGuard(ArrayList<TankProjectile> allprojectiles) {
 		int closesttarget = 0;
-		double closestsquaredistance = 99999;
-		double tempdistance = 0;
-		int i1;
+		double closestsquaredistance = Double.MAX_VALUE;
 		ArrayList<Integer> possibletargets = new ArrayList<Integer>();
 		Random random = new Random();
 		
-		for (i1 = 0; i1 < tempallprojectiles.size(); i1++) {
+		for (int i1 = 0; i1 < allprojectiles.size(); i1++)
 			
-			if (owner != tempallprojectiles.get(i1).owner && tempallprojectiles.get(i1).size != 4) {
-				tempdistance = Math.sqrt(Math.pow((double) tempallprojectiles.get(i1).centerx - getTrueX(), 2) + Math.pow((double) tempallprojectiles.get(i1).centery - getTrueY(), 2));
+			if (owner != allprojectiles.get(i1).owner && allprojectiles.get(i1).size != 4) {
+				double tempdistance = Math.pow(allprojectiles.get(i1).centerx - getTrueX(), 2) + Math.pow(allprojectiles.get(i1).centery - getTrueY(), 2);
 				
-				if (tempdistance < closestsquaredistance && tempdistance < bulletrange) {
+				if (tempdistance < closestsquaredistance && tempdistance < Math.pow(bulletrange, 2)) {
 					closestsquaredistance = tempdistance;
 					closesttarget = i1;
 					possibletargets.clear();
 					possibletargets.add(i1);
-				} else if (tempdistance == closestsquaredistance && tempdistance < bulletrange)
+				} else if (tempdistance == closestsquaredistance && tempdistance < Math.pow(bulletrange, 2)) {
 					possibletargets.add(i1);
+				}
 				
 			}
-			
-		}
+		
 		
 		if (possibletargets.size() != 0) {
 			closesttarget = possibletargets.get(random.nextInt(possibletargets.size()));
 			activetarget = closesttarget;
 			targeting = true;
-		} else
+		} else {
 			resetTargeting();
+		}
 		
 	}
 	
-	public void turnToTargetGuard(double tempcenterx, double tempcentery, int tempspeed, int tempangle) {
+	public void turnToTargetGuard(double tempcenterx, double tempcentery, double tempspeed, int tempangle) {
 		int targetangle;
 		double temptargetangle;
 		double timetobullet = Math.sqrt(Math.pow(tempcentery - getTrueY(), 2) + Math.pow(tempcenterx - getTrueX(), 2)) / bulletspeed;
@@ -336,34 +338,31 @@ public class DroneTank {
 		temptargetangle = Math.atan2(tempcentery - getTrueY(), tempcenterx - getTrueX()) + Math.PI / 2.0;
 		targetangle = (int) Math.round(Math.toDegrees(temptargetangle));
 		targetangle = Math.floorMod(targetangle, 360);
-		angle = targetangle;
+		angle = Math.floorMod(targetangle, 360);
 		shooting = true;
-	}
-	
-	public boolean fireBullet() {
-		
-		if (currentreload != 0)
-			currentreload--;
-		
-		if (shooting && currentreload == 0) {
-			currentreload = maxreload;
-			return true;
-		}
-		
-		return false;
 	}
 	
 	public void displayHealthBar() {
 		lastdamaged++;
-		boolean tempvisible = lastdamaged <= 60;
-		healthbase.setVisible(tempvisible);
-		bluehealthbar.setVisible(tempvisible);
-		redhealthbar.setVisible(tempvisible);
+		double tempvisible = 1.5 - (double) lastdamaged / 60;
+		tempvisible = tempvisible < 0 ? 0 : tempvisible;
+		tempvisible = tempvisible > 1 ? 1 : tempvisible;
+		healthbase.setStroke(Color.rgb(0, 0, 0, tempvisible));
+		healthbase.setFill(Color.rgb(0, 0, 0, tempvisible));
+		bluehealthbar.setStroke(Color.rgb(0, 0, 255, tempvisible));
+		bluehealthbar.setFill(Color.rgb(0, 0, 255, tempvisible));
+		redhealthbar.setStroke(Color.rgb(255, 0, 0, tempvisible));
+		redhealthbar.setFill(Color.rgb(255, 0, 0, tempvisible));
 	}
 	
-	public void removeHealth(int tempdamage, int tempowner) {
+	public void removeHealth(TankProjectile bullet) {
 		lastdamaged = 0;
-		currenthealth -= tempdamage * (owner == -1 ? (tempowner == 0 ? -1 : 1) : 1);
+		
+		if (owner == -1)
+			currenthealth += (int) ((bullet.boosting ? 1.4 : 1) * bullet.damage * (bullet.owner == 0 ? 1 : -1));
+		else
+			currenthealth -= (int) ((bullet.boosting ? 1.4 : 1) * bullet.damage);
+		
 	}
 	
 	public void resetTargeting() {
@@ -371,32 +370,19 @@ public class DroneTank {
 		shooting = false;
 	}
 	
-	public boolean bulletCollision(int tempowner, int tempindex) {
+	public boolean bulletCollision(TankProjectile tempbullet) {
 		
 		if (Math.abs(currenthealth) >= maxhealth && owner == -1) {
-			toTeam(tempowner);
+			toTeam(tempbullet.owner);
 			return true;
 		} else if (currenthealth <= 0 && owner != -1)
-			toNeutral();
+			toNeutral(tempbullet.owner);
 		else if (owner == -1 && clazz != 4 && !targeting) {
-			activetarget = tempindex;
+			activetarget = tempbullet.origindrone;
 			targeting = true;
 		}
 		
 		return false;
-	}
-	
-	public int getBarrelLength() {
-		
-		switch (clazz) {
-			case 0: return 25;
-			case 1: return 30;
-			case 2: return 31;
-			case 3: return 30;
-			case 4: return 22;
-		}
-		
-		return 25;
 	}
 	
 }
